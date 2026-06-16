@@ -16,6 +16,9 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
+      - "443:443"
+    volumes:
+      - ~/attendance/ssl:/etc/nginx/ssl:ro
     depends_on:
       - backend
 
