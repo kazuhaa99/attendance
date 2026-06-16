@@ -1,0 +1,110 @@
+import { fmtDate, fmtTime } from '../../utils/dateUtils'
+import s from './KPIRow.module.css'
+
+function fmt(n) {
+  return n == null ? '—' : Number(n).toLocaleString('ru-RU')
+}
+
+function pct(n) {
+  return n == null ? '—' : `${n}%`
+}
+
+function fmtMin(mins) {
+  if (mins == null) return '—'
+  const h = Math.floor(mins / 60)
+  const m = mins % 60
+  return `${h}:${String(m).padStart(2, '0')}`
+}
+
+export default function KPIRow({ data, rows, loading, staffKpi, absLoading, personHours, globalName }) {
+  const filtered = rows ?? []
+
+  const uniqueCards = new Set(filtered.map(r => r.no).filter(Boolean)).size
+  const inCount     = filtered.filter(r => r.is_out === false).length
+  const outCount    = filtered.filter(r => r.is_out === true).length
+  const devices     = new Set(filtered.map(r => r.terminal).filter(v => v && v !== '—')).size
+
+  const total    = globalName ? filtered.length : (data?.total ?? null)
+  const totalSub = globalName
+    ? 'по фильтру'
+    : (data && data.loaded < data.total)
+      ? `показано ${fmt(data.loaded)} из ${fmt(data.total)}`
+      : 'за период'
+
+  const staffLoading = loading || absLoading
+  const isFiltered   = !!globalName?.trim()
+
+  return (
+    <div className={`${s.row} ${loading ? s.loading : ''} ${isFiltered ? s.filtered : ''}`}>
+      <KPI label="Всего визитов"   value={fmt(total)}        sub={totalSub} />
+      <KPI label="Уникальных карт" value={fmt(uniqueCards)}  sub={isFiltered ? 'карт у сотрудника' : 'посетителей'} />
+      <KPI label="Входов"          value={fmt(inCount)}      sub="isOut = false" color="var(--green)" />
+      <KPI label="Выходов"         value={fmt(outCount)}     sub="isOut = true"  color="var(--red)" />
+      <KPI label="Устройств"       value={fmt(devices)}      sub="уникальных terminal" />
+
+      {isFiltered && personHours ? (
+        <>
+          <KPI
+            label="Часов отработано"
+            value={fmtMin(personHours.totalMin)}
+            sub={`за ${dateRangeLabel(personHours)}`}
+            color="#3b82f6"
+          />
+          <KPI
+            label="Первый вход"
+            value={fmtTime(personHours.firstIn)}
+            sub={fmtDate(personHours.firstIn)}
+            color="var(--green)"
+          />
+          <KPI
+            label="Последний выход"
+            value={fmtTime(personHours.lastOut)}
+            sub={fmtDate(personHours.lastOut)}
+            color="var(--red)"
+          />
+        </>
+      ) : (
+        <>
+          <KPI
+            label="Сотрудников"
+            value={staffLoading ? '…' : fmt(staffKpi?.total)}
+            sub="пришли + отсутствовали"
+            loading={staffLoading}
+          />
+          <KPI
+            label="% явки"
+            value={staffLoading ? '…' : pct(staffKpi?.visitedPct)}
+            sub={staffLoading ? '' : `${fmt(staffKpi?.visitedCount)} чел. пришло`}
+            color="var(--green)"
+            loading={staffLoading}
+          />
+          <KPI
+            label="% отсутствия"
+            value={staffLoading ? '…' : pct(staffKpi?.absentPct)}
+            sub={staffLoading ? '' : `${fmt(staffKpi?.absentCount)} чел. в отпуске/б/л`}
+            color="var(--red)"
+            loading={staffLoading}
+          />
+        </>
+      )}
+    </div>
+  )
+}
+
+function dateRangeLabel(h) {
+  if (!h?.firstIn) return 'период'
+  const d1 = h.firstIn.slice(0, 10)
+  const d2 = h.lastOut?.slice(0, 10) ?? d1
+  if (d1 === d2) return d1.slice(5).replace('-', '.')
+  return `${d1.slice(5).replace('-', '.')}–${d2.slice(5).replace('-', '.')}`
+}
+
+function KPI({ label, value, sub, color, loading }) {
+  return (
+    <div className={s.card}>
+      <div className={s.label}>{label}</div>
+      <div className={s.value} style={color ? { color } : undefined}>{value}</div>
+      <div className={s.sub}>{loading ? '' : sub}</div>
+    </div>
+  )
+}

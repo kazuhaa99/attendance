@@ -1,0 +1,177 @@
+.root {
+  position: fixed;
+  bottom: 28px;
+  left: 28px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+/* tiny hidden iframe — must have some size for YT API to work */
+.iframe {
+  width: 1px;
+  height: 1px;
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,.35);
+  transition: color 0.15s, border-color 0.15s, transform 0.15s;
+  animation: fadeIn 0.2s ease;
+}
+
+.btn:hover {
+  color: var(--text);
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+  transform: none;
+}
+
+.btnErr {
+  color: #f97316;
+  border-color: #f97316;
+  opacity: 0.8;
+}
+
+.btnErr:hover {
+  color: #f97316;
+  border-color: #f97316;
+  transform: none;
+}
+
+.btnOn {
+  color: var(--accent);
+  border-color: var(--accent);
+  animation: fadeIn 0.2s ease, pulse 3s ease-in-out infinite;
+}
+
+.btnOn:hover {
+  color: var(--accent);
+}
+
+.volBtn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
+  transition: color 0.15s, border-color 0.15s;
+  animation: fadeIn 0.15s ease;
+}
+
+.volBtn:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.volBtnOn {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* volume popup — slides up above controls */
+.volPanel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.35);
+  animation: slideUp 0.15s ease;
+  min-width: 160px;
+}
+
+.volLabel {
+  font-size: 11px;
+  color: var(--muted);
+  min-width: 28px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.slider::-webkit-slider-thumb:hover {
+  transform: scale(1.25);
+}
+
+.slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: none;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 4px 16px rgba(0,0,0,.35); }
+  50%       { box-shadow: 0 4px 20px color-mix(in srgb, var(--accent) 40%, transparent); }
+}
+
+@media (max-width: 768px) {
+  .root { bottom: 16px; left: 16px; }
+}

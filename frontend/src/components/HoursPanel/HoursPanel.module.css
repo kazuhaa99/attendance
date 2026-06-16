@@ -1,0 +1,273 @@
+.wrap {
+  margin-top: 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+/* ── Header ─────────────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 16px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+  gap: 10px;
+}
+.header:hover { background: var(--hover); }
+.headerOpen   { background: var(--bg-2); }
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.iconBadge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(59, 130, 246, 0.12);
+  color: #3b82f6;
+  flex-shrink: 0;
+}
+
+.title {
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.pill {
+  font-size: 11px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 1px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.totalPill {
+  font-size: 11px;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  color: #3b82f6;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ── Animated body ──────────────────────────────────────────── */
+.bodyWrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.bodyWrapOpen {
+  grid-template-rows: 1fr;
+}
+.bodyInner {
+  overflow: hidden;
+  border-top: 1px solid var(--border);
+}
+
+.body {
+  padding: 14px 16px 0;
+}
+
+/* ── Toolbar ────────────────────────────────────────────────── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--muted);
+  margin-left: auto;
+}
+
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 3px;
+}
+
+.dotGood { background: #22c55e; }
+.dotWarn { background: #f97316; }
+.dotLow  { background: #ef4444; }
+
+/* ── Table ──────────────────────────────────────────────────── */
+.scroll {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+thead th {
+  background: var(--bg-2);
+  color: var(--muted);
+  font-weight: 500;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  text-align: center;
+}
+
+.nameCol {
+  text-align: left !important;
+  min-width: 180px;
+  max-width: 220px;
+}
+
+.dayCol {
+  min-width: 52px;
+  width: 52px;
+}
+
+.totalCol {
+  min-width: 64px;
+  font-weight: 600 !important;
+  color: var(--text) !important;
+  border-left: 1px solid var(--border);
+}
+
+.dayNum {
+  display: block;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.dayName {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--hover); }
+
+.nameCell {
+  padding: 7px 10px;
+  font-weight: 500;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.clickable:hover {
+  color: var(--accent);
+}
+
+.cell {
+  padding: 7px 6px;
+  text-align: center;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 12px;
+}
+
+.good      { color: #22c55e; }
+.warn      { color: #f97316; }
+.low       { color: #ef4444; }
+.empty_cell { color: var(--muted); }
+
+.dash {
+  opacity: 0.3;
+  font-size: 11px;
+}
+
+.totalCell {
+  font-weight: 600;
+  color: var(--text);
+  border-left: 1px solid var(--border);
+}
+
+.empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 20px;
+}
+
+/* ── Pagination ─────────────────────────────────────────────── */
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 4px;
+  flex-wrap: wrap;
+}
+
+.pgBtn {
+  min-width: 30px;
+  height: 30px;
+  padding: 0 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pgBtn:hover:not(:disabled) { color: var(--text); border-color: var(--accent); }
+.pgBtn:disabled { opacity: 0.3; cursor: default; }
+
+.pgActive {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.pgDots { font-size: 13px; color: var(--muted); padding: 0 2px; }
+.pgInfo { margin-left: auto; font-size: 11px; color: var(--muted); }
+
+@media (max-width: 640px) {
+  .headerLeft { flex-wrap: wrap; }
+  .body { padding: 10px 12px 0; }
+  .toolbar { flex-wrap: wrap; }
+  .legend { margin-left: 0; }
+  thead th { padding: 6px 8px; font-size: 11px; }
+  .nameCol { min-width: 130px; max-width: 160px; }
+  .dayCol { min-width: 42px; width: 42px; }
+}
+
+@media (max-width: 480px) {
+  .body { padding: 8px 10px 0; }
+}

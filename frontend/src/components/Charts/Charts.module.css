@@ -1,0 +1,70 @@
+.row {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 16px;
+  margin-bottom: 16px;
+  transition: opacity 0.18s;
+}
+
+.row.loading { opacity: 0.45; pointer-events: none; }
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.panelHeader {
+  padding: 16px 20px 0;
+}
+
+.panelTitle {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.panelSub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.panelBody {
+  padding: 16px 20px 20px;
+}
+
+.chartWrap {
+  position: relative;
+  height: 230px;
+}
+
+.panelActive { border-color: var(--accent); }
+
+.activeTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.clearTag {
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.1s;
+}
+.clearTag:hover { color: var(--text); }
+
+@media (max-width: 1000px) {
+  .row { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .chartWrap { height: 190px; }
+  .panelHeader { padding: 12px 14px 0; }
+  .panelBody { padding: 12px 14px 14px; }
+}
+
+@media (max-width: 480px) {
+  .chartWrap { height: 160px; }
+}

@@ -1,0 +1,24 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    volumes:
+      - ./backend:/app          # hot reload через uvicorn --reload
+    ports:
+      - "8000:8000"
+    env_file: .env
+    command: uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+  frontend:
+    build:
+      context: ./frontend
+      target: dev
+    volumes:
+      - ./frontend:/app          # весь src монтируется для HMR
+      - /app/node_modules        # анонимный том — node_modules из образа, не с хоста
+    ports:
+      - "5173:5173"
+    environment:
+      BACKEND_URL: http://backend:8000   # Vite proxy target внутри Docker
+    depends_on:
+      - backend
