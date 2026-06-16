@@ -12,13 +12,10 @@ services:
   frontend:
     build:
       context: ./frontend
-      target: production      # multi-stage: build → nginx
+      target: production
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ~/attendance/ssl:/etc/nginx/ssl:ro
+      - "127.0.0.1:3001:80"
     depends_on:
       - backend
 

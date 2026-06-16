@@ -6,7 +6,8 @@ export async function fetchVisits(dateFrom, dateTo, filters = {}) {
   if (filters.direction?.trim()) params.set('direction',  filters.direction.trim())
   if (filters.noName)            params.set('no_name',    'true')
 
-  const resp = await fetch(`/api/visits?${params}`)
+  const base = import.meta.env.BASE_URL.replace(/\/$/, '')
+  const resp = await fetch(`${base}/api/visits?${params}`)
   if (!resp.ok) {
     const body = await resp.json().catch(() => ({}))
     throw new Error(body.detail || `HTTP ${resp.status}`)
