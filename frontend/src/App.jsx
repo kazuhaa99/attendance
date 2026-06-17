@@ -158,28 +158,30 @@ export default function App() {
 
   return (
     <>
-      <Header
-        dateFrom={dateFrom}
-        dateTo={dateTo}
-        lastUpdated={data?.fetchedAt}
-        loading={loading}
-        onDateFromChange={setDateFrom}
-        onDateToChange={setDateTo}
-        onRefresh={() => setRefreshKey(k => k + 1)}
-      />
+      <div className={s.stickyTop}>
+        <Header
+          dateFrom={dateFrom}
+          dateTo={dateTo}
+          lastUpdated={data?.fetchedAt}
+          loading={loading}
+          onDateFromChange={setDateFrom}
+          onDateToChange={setDateTo}
+          onRefresh={() => setRefreshKey(k => k + 1)}
+        />
 
-      <FilterBar
-        filters={filters}
-        onChange={setFilters}
-        zones={zones}
-        terminals={terminals}
-        branches={branches}
-        branchFilter={branchFilter}
-        onBranchChange={setBranchFilter}
-        globalName={globalName}
-        onGlobalNameChange={setGlobalName}
-        onResetAll={handleResetAll}
-      />
+        <FilterBar
+          filters={filters}
+          onChange={setFilters}
+          zones={zones}
+          terminals={terminals}
+          branches={branches}
+          branchFilter={branchFilter}
+          onBranchChange={setBranchFilter}
+          globalName={globalName}
+          onGlobalNameChange={setGlobalName}
+          onResetAll={handleResetAll}
+        />
+      </div>
 
       {data?.unavailable && (
         <div className={s.warningBanner}>

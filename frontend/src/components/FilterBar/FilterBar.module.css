@@ -2,7 +2,6 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 20px;
   flex-wrap: wrap;
 }
 
@@ -169,27 +168,30 @@
 .resetAll {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  background: none;
-  border: 1px solid transparent;
-  color: var(--muted);
+  gap: 6px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
   font-family: inherit;
   font-size: 12px;
-  font-weight: 500;
-  padding: 0 10px;
+  font-weight: 600;
+  padding: 0 12px;
   height: 34px;
   border-radius: 7px;
   cursor: pointer;
-  transition: color 0.1s, border-color 0.1s;
+  transition: background 0.12s, border-color 0.12s;
   white-space: nowrap;
 }
-.resetAll:hover { color: var(--text); border-color: var(--border); }
+.resetAll:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.5);
+}
 
 .activeCount {
-  background: var(--accent);
-  color: #fff;
+  background: #f87171;
+  color: #000;
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 700;
   padding: 1px 5px;
   border-radius: 999px;
   line-height: 1.4;

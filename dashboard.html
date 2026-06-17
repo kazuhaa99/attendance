@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visits Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0e0e10;
+      --surface: #18181b;
+      --border:  #27272a;
+      --accent:  #6366f1;
+      --text:    #f4f4f5;
+      --muted:   #71717a;
+      --green:   #22c55e;
+      --red:     #ef4444;
+    }
+
+    html { color-scheme: dark; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* ── Layout ─────────────────────────────────────────────────────────── */
+    .app {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 28px 36px 48px;
+    }
+
+    /* ── Header ─────────────────────────────────────────────────────────── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 32px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-mark {
+      width: 28px;
+      height: 28px;
+      background: var(--accent);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .logo-mark svg { display: block; }
+
+    .header h1 {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.015em;
+    }
+
+    .divider-dot {
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+
+    .last-updated {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .date-range {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 0 10px;
+      height: 34px;
+    }
+
+    .date-input {
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      outline: none;
+      width: 120px;
+    }
+
+    .date-input::-webkit-calendar-picker-indicator {
+      filter: invert(0.5);
+      cursor: pointer;
+    }
+
+    .date-sep {
+      color: var(--muted);
+      font-size: 12px;
+      user-select: none;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0 14px;
+      height: 34px;
+      border-radius: 7px;
+      font-size: 13px;
+      font-family: inherit;
+      font-weight: 500;
+      cursor: pointer;
+      transition: border-color 0.12s, background 0.12s;
+      white-space: nowrap;
+    }
+
+    .btn:hover { border-color: #3f3f46; background: #1c1c1f; }
+    .btn:active { background: #202024; }
+
+    .btn-icon { width: 14px; height: 14px; flex-shrink: 0; }
+
+    /* ── Error banner ───────────────────────────────────────────────────── */
+    .error-banner {
+      display: none;
+      background: rgba(239, 68, 68, 0.07);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      border-radius: 7px;
+      padding: 12px 16px;
+      color: #f87171;
+      font-size: 13px;
+      margin-bottom: 24px;
+    }
+
+    .error-banner.visible { display: block; }
+
+    /* ── KPI row ────────────────────────────────────────────────────────── */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .kpi-card {
+      background: var(--surface);
+      padding: 20px 22px 18px;
+      border-right: 1px solid var(--border);
+    }
+
+    .kpi-card:last-child { border-right: none; }
+
+    .kpi-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 10px;
+    }
+
+    .kpi-value {
+      font-size: 30px;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      line-height: 1;
+      margin-bottom: 6px;
+      transition: opacity 0.15s;
+    }
+
+    .kpi-sub {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* ── Charts grid ────────────────────────────────────────────────────── */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 16px 20px 0;
+    }
+
+    .panel-title {
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .panel-sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+
+    .panel-body {
+      padding: 16px 20px 20px;
+    }
+
+    .chart-wrap {
+      position: relative;
+      height: 230px;
+    }
+
+    /* ── Table ──────────────────────────────────────────────────────────── */
+    .table-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .table-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .table-panel-title { font-size: 13px; font-weight: 500; }
+
+    .pill {
+      font-size: 11px;
+      color: var(--muted);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 2px 9px;
+      border-radius: 999px;
+      letter-spacing: 0.01em;
+    }
+
+    .table-scroll { overflow-x: auto; }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    thead th {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.055em;
+      text-align: left;
+      padding: 9px 20px;
+      background: #111113;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    tbody td {
+      padding: 9px 20px;
+      font-size: 13px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    tbody tr:last-child td { border-bottom: none; }
+
+    tbody tr:hover td { background: #1a1a1e; }
+
+    .mono {
+      font-variant-numeric: tabular-nums;
+      font-size: 12px;
+      color: var(--muted);
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    }
+
+    /* direction badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+
+    .badge-in  { background: rgba(34,197,94,.1);  color: #4ade80; border: 1px solid rgba(34,197,94,.18);  }
+    .badge-out { background: rgba(239,68,68,.1);   color: #f87171; border: 1px solid rgba(239,68,68,.18);  }
+    .badge-neu { background: rgba(113,113,122,.1); color: var(--muted); border: 1px solid var(--border); }
+
+    /* ── Loading / skeleton ─────────────────────────────────────────────── */
+    .fade-panel { transition: opacity 0.18s ease; }
+    .fade-panel.loading { opacity: 0.45; pointer-events: none; }
+
+    .spin { animation: spin 0.75s linear infinite; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Responsive ─────────────────────────────────────────────────────── */
+    @media (max-width: 1100px) {
+      .kpi-row { grid-template-columns: repeat(3, 1fr); }
+      .kpi-card:nth-child(3) { border-right: none; }
+      .kpi-card:nth-child(4),
+      .kpi-card:nth-child(5) { border-top: 1px solid var(--border); }
+      .charts-row { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 720px) {
+      .app { padding: 16px 16px 40px; }
+      .kpi-row { grid-template-columns: repeat(2, 1fr); }
+      .kpi-card:nth-child(2n) { border-right: none; }
+      .kpi-card:nth-child(n+3) { border-top: 1px solid var(--border); }
+    }
+
+    @media (max-width: 480px) {
+      .kpi-row { grid-template-columns: 1fr; }
+      .kpi-card { border-right: none !important; }
+      .kpi-card:nth-child(n+2) { border-top: 1px solid var(--border); }
+      .header-right { width: 100%; flex-direction: column; align-items: stretch; }
+      .date-range { width: 100%; }
+      .btn { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── Header ─────────────────────────────────────────────────────────── -->
+  <header class="header">
+    <div class="header-left">
+      <div class="logo-mark">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M2 7h10M7 2v10" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <h1>Visits Dashboard</h1>
+      <div class="divider-dot"></div>
+      <span class="last-updated" id="last-updated">—</span>
+    </div>
+
+    <div class="header-right">
+      <div class="date-range">
+        <input type="date" class="date-input" id="date-from" />
+        <span class="date-sep">—</span>
+        <input type="date" class="date-input" id="date-to" />
+      </div>
+      <button class="btn" id="refresh-btn" onclick="loadData()">
+        <svg id="refresh-icon" class="btn-icon" viewBox="0 0 16 16" fill="none"
+             stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1.5 8A6.5 6.5 0 1 0 8 1.5"/>
+          <path d="M1.5 4v4h4"/>
+        </svg>
+        Обновить
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Error ──────────────────────────────────────────────────────────── -->
+  <div class="error-banner" id="error-banner"></div>
+
+  <!-- ── KPI ───────────────────────────────────────────────────────────── -->
+  <div class="kpi-row fade-panel" id="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-label">Всего визитов</div>
+      <div class="kpi-value" id="kpi-total">—</div>
+      <div class="kpi-sub" id="kpi-total-sub">за период</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Уникальных карт</div>
+      <div class="kpi-value" id="kpi-unique">—</div>
+      <div class="kpi-sub">посетителей</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Входов</div>
+      <div class="kpi-value" id="kpi-in" style="color: var(--green)">—</div>
+      <div class="kpi-sub" id="kpi-in-sub">—</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Выходов</div>
+      <div class="kpi-value" id="kpi-out" style="color: var(--red)">—</div>
+      <div class="kpi-sub" id="kpi-out-sub">—</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Устройств (ридеров)</div>
+      <div class="kpi-value" id="kpi-devices">—</div>
+      <div class="kpi-sub">уникальных device_id</div>
+    </div>
+  </div>
+
+  <!-- ── Charts ────────────────────────────────────────────────────────── -->
+  <div class="charts-row">
+    <div class="panel fade-panel" id="panel-timeline">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title" id="timeline-title">Посещения по времени</div>
+          <div class="panel-sub" id="timeline-sub">—</div>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="chart-wrap">
+          <canvas id="chart-timeline"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel fade-panel" id="panel-direction">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Направления</div>
+          <div class="panel-sub">разбивка по direction</div>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="chart-wrap">
+          <canvas id="chart-direction"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Table ─────────────────────────────────────────────────────────── -->
+  <div class="table-panel fade-panel" id="panel-table">
+    <div class="table-panel-header">
+      <span class="table-panel-title">Лента визитов</span>
+      <span class="pill" id="table-count">0 записей</span>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Дата и время</th>
+            <th>Имя</th>
+            <th>Карта №</th>
+            <th>Направление</th>
+            <th>Терминал</th>
+            <th>Зона</th>
+            <th>Хост</th>
+          </tr>
+        </thead>
+        <tbody id="table-body">
+          <tr>
+            <td colspan="7" style="text-align:center; color:var(--muted); padding:40px 20px;">
+              Загрузка...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+  /* ── Конфигурация API (тот же источник что visits.py) ─────────────────── */
+  const BASE_URL  = 'https://pass.telecom.quest/api';
+  const CREDS     = { email: 'dashboard@elpass.kz', pass: 'D@shboard1!' };
+  const PAGE_SIZE = 100;   // сервер отдаёт не более 100 строк за запрос
+  const MAX_ROWS  = 1000;  // максимум строк для загрузки (10 параллельных страниц)
+
+  let _token        = null;
+  let chartTimeline = null;
+  let chartDir      = null;
+
+  /* ── Даты ───────────────────────────────────────────────────────────── */
+  function isoDate(d) {
+    return d.toISOString().slice(0, 10);
+  }
+
+  function initDates() {
+    const to   = new Date();
+    const from = new Date();
+    from.setDate(from.getDate() - 6); // последние 7 дней
+    document.getElementById('date-from').value = isoDate(from);
+    document.getElementById('date-to').value   = isoDate(to);
+  }
+
+  function dateDiffDays(a, b) {
+    return Math.round((new Date(b) - new Date(a)) / 86400000);
+  }
+
+  /* ── Авторизация ────────────────────────────────────────────────────── */
+  async function getToken() {
+    if (_token) return _token;
+    const r = await fetch(`${BASE_URL}/rpc/login`, {
+      method:  'POST',
+      headers: { 'accept': 'application/json', 'content-type': 'application/json' },
+      body:    JSON.stringify(CREDS),
+    });
+    if (!r.ok) throw new Error(`Авторизация: HTTP ${r.status}`);
+    const d = await r.json();
+    _token = d.token || d.access_token || (Array.isArray(d) ? d[0]?.token : null);
+    if (!_token) throw new Error('Токен не найден в ответе сервера');
+    return _token;
+  }
+
+  /* ── Запрос одной страницы ──────────────────────────────────────────── */
+  async function fetchPage(token, baseUrl, from, to) {
+    const r = await fetch(baseUrl, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Range':         `${from}-${to}`,
+        'Prefer':        'count=exact',
+        'accept':        'application/json',
+      },
+    });
+    if (!r.ok) throw new Error(`Visits API: HTTP ${r.status}`);
+    const cr    = r.headers.get('Content-Range') || '';
+    const match = cr.match(/\/(\d+)$/);
+    const total = match ? parseInt(match[1], 10) : null;
+    return { rows: await r.json(), total };
+  }
+
+  /* ── Авто-пагинация: до MAX_ROWS строк параллельными запросами ───────── */
+  async function fetchVisits(token, dateFrom, dateTo) {
+    const baseUrl = `${BASE_URL}/el_tvisits`
+      + `?select=*,card(name,no)`
+      + `&loged_at=gte.${dateFrom}`
+      + `&loged_at=lte.${dateTo}T23:59:59`
+      + `&order=loged_at.desc`;
+
+    // Первая страница — узнаём общий счётчик
+    const first = await fetchPage(token, baseUrl, 0, PAGE_SIZE - 1);
+    const total = first.total;
+
+    if (!total || total <= PAGE_SIZE) {
+      return { rows: first.rows, total };
+    }
+
+    // Сколько страниц нужно, не превышая MAX_ROWS
+    const pagesToFetch = Math.min(Math.ceil(total / PAGE_SIZE), MAX_ROWS / PAGE_SIZE);
+
+    // Параллельно запрашиваем страницы 1..N
+    const rest = await Promise.all(
+      Array.from({ length: pagesToFetch - 1 }, (_, i) => {
+        const from = (i + 1) * PAGE_SIZE;
+        const to   = from + PAGE_SIZE - 1;
+        return fetchPage(token, baseUrl, from, to).then(p => p.rows);
+      })
+    );
+
+    return { rows: [...first.rows, ...rest.flat()], total };
+  }
+
+  /* ── Главный загрузчик ──────────────────────────────────────────────── */
+  async function loadData() {
+    const dateFrom = document.getElementById('date-from').value;
+    const dateTo   = document.getElementById('date-to').value;
+    if (!dateFrom || !dateTo) return;
+
+    setLoading(true);
+    clearError();
+
+    try {
+      const token = await getToken();
+      const { rows, total } = await fetchVisits(token, dateFrom, dateTo);
+      render(rows, total, dateFrom, dateTo);
+      document.getElementById('last-updated').textContent =
+        'обновлено в ' + new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    } catch (err) {
+      _token = null; // сброс — следующий вызов переавторизуется
+      showError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /* ── Render: точка входа ────────────────────────────────────────────── */
+  function render(rows, serverTotal, dateFrom, dateTo) {
+    renderKPIs(rows, serverTotal);
+    renderTimeline(rows, dateFrom, dateTo);
+    renderDirectionChart(rows);
+    renderTable(rows);
+  }
+
+  /* ── KPI ────────────────────────────────────────────────────────────── */
+  function renderKPIs(rows, serverTotal) {
+    const total       = serverTotal ?? rows.length;
+    // Уникальные посетители по номеру карты (поле "no" — идентификатор карты)
+    const uniqueCards = new Set(rows.map(r => r.no).filter(Boolean)).size;
+    // Устройства — поле "terminal"
+    const devices     = new Set(rows.map(r => r.terminal).filter(Boolean)).size;
+    // Направление — булево поле isOut: false = вход, true = выход
+    const inCount  = rows.filter(r => r.isOut === false).length;
+    const outCount = rows.filter(r => r.isOut === true).length;
+
+    setText('kpi-total',   fmt(total));
+    setText('kpi-unique',  fmt(uniqueCards));
+    setText('kpi-in',      fmt(inCount));
+    setText('kpi-out',     fmt(outCount));
+    setText('kpi-devices', fmt(devices));
+
+    if (serverTotal && serverTotal > rows.length) {
+      setText('kpi-total-sub', `показано ${fmt(rows.length)} из ${fmt(serverTotal)}`);
+    } else {
+      setText('kpi-total-sub', 'за период');
+    }
+
+    setText('kpi-in-sub',  'isOut = false');
+    setText('kpi-out-sub', 'isOut = true');
+  }
+
+  /* ── Timeline chart ─────────────────────────────────────────────────── */
+  function renderTimeline(rows, dateFrom, dateTo) {
+    const days = dateDiffDays(dateFrom, dateTo);
+
+    // Авто-гранулярность: до 2 дней — по часам, иначе — по дням
+    const byHour = days <= 2;
+
+    let labels, counts;
+
+    if (byHour) {
+      // Разбивка по часам 0–23
+      counts = Array(24).fill(0);
+      for (const r of rows) {
+        if (!r.loged_at) continue;
+        counts[new Date(r.loged_at).getHours()]++;
+      }
+      labels = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`);
+      setText('timeline-title', 'Посещения по часам');
+      setText('timeline-sub', `разбивка по часу суток за ${days <= 0 ? 'день' : `${days + 1} дн.`}`);
+    } else {
+      // Разбивка по дням: от dateFrom до dateTo включительно
+      const dayMap = {};
+      let cur = new Date(dateFrom);
+      const end = new Date(dateTo);
+      while (cur <= end) {
+        dayMap[isoDate(cur)] = 0;
+        cur.setDate(cur.getDate() + 1);
+      }
+      for (const r of rows) {
+        if (!r.loged_at) continue;
+        const day = r.loged_at.slice(0, 10);
+        if (day in dayMap) dayMap[day]++;
+      }
+      labels = Object.keys(dayMap).map(d => {
+        const dt = new Date(d + 'T12:00:00');
+        return dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+      });
+      counts = Object.values(dayMap);
+      setText('timeline-title', 'Посещения по дням');
+      setText('timeline-sub', `${fmt(rows.length)} записей за ${days + 1} дн.`);
+    }
+
+    if (chartTimeline) chartTimeline.destroy();
+    const ctx = document.getElementById('chart-timeline').getContext('2d');
+    chartTimeline = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          data: counts,
+          backgroundColor: 'rgba(99,102,241,0.55)',
+          borderColor:     '#6366f1',
+          borderWidth:     1,
+          borderRadius:    3,
+          borderSkipped:   false,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: tooltipDefaults(),
+        },
+        scales: {
+          x: axisDefaults(),
+          y: { ...axisDefaults(), beginAtZero: true, ticks: { ...axisDefaults().ticks, precision: 0 } },
+        },
+      },
+    });
+  }
+
+  /* ── Direction doughnut ─────────────────────────────────────────────── */
+  function renderDirectionChart(rows) {
+    // isOut: false = вход, true = выход
+    const inCount  = rows.filter(r => r.isOut === false).length;
+    const outCount = rows.filter(r => r.isOut === true).length;
+    const other    = rows.length - inCount - outCount;
+
+    const labels = ['Вход', 'Выход'];
+    const values = [inCount, outCount];
+    const bg     = ['rgba(34,197,94,.55)', 'rgba(239,68,68,.55)'];
+    const border = ['#22c55e', '#ef4444'];
+
+    if (other > 0) {
+      labels.push('Неизвестно');
+      values.push(other);
+      bg.push('rgba(99,102,241,.55)');
+      border.push('#6366f1');
+    }
+
+    if (chartDir) chartDir.destroy();
+    const ctx = document.getElementById('chart-direction').getContext('2d');
+    chartDir = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels,
+        datasets: [{ data: values, backgroundColor: bg, borderColor: border, borderWidth: 2 }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '66%',
+        plugins: {
+          legend: {
+            display:  true,
+            position: 'bottom',
+            labels: {
+              color:           '#71717a',
+              font:            { size: 12, family: 'Inter, system-ui, sans-serif' },
+              padding:         14,
+              usePointStyle:   true,
+              pointStyleWidth: 8,
+            },
+          },
+          tooltip: tooltipDefaults(),
+        },
+      },
+    });
+  }
+
+  /* ── Table ──────────────────────────────────────────────────────────── */
+  function renderTable(rows) {
+    setText('table-count', `${fmt(rows.length)} записей`);
+
+    const tbody = document.getElementById('table-body');
+
+    if (!rows.length) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:40px 20px">
+        Нет данных за указанный период</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = rows.map(r => {
+      const card = r.card || {};
+      const dt   = r.loged_at ? r.loged_at.slice(0, 19).replace('T', ' ') : '—';
+      const name = esc(String(card.name   || '—'));
+      const no   = esc(String(r.no        || card.no || '—'));
+      const term = esc(String(r.terminal  ?? '—'));
+      const zone = esc(String(r.zone      ?? '—'));
+      const host = esc(String(r.host      ?? '—'));
+      return `<tr>
+        <td class="mono">${dt}</td>
+        <td>${name}</td>
+        <td class="mono">${no}</td>
+        <td>${dirBadge(r.isOut)}</td>
+        <td class="mono">${term}</td>
+        <td class="mono">${zone}</td>
+        <td class="mono" style="color:#3f3f46">${host}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  /* ── Helpers ────────────────────────────────────────────────────────── */
+
+  // isOut: false = вход, true = выход (булево поле API)
+  function dirBadge(isOut) {
+    if (isOut === false) return `<span class="badge badge-in">↑ Вход</span>`;
+    if (isOut === true)  return `<span class="badge badge-out">↓ Выход</span>`;
+    return `<span class="badge badge-neu">—</span>`;
+  }
+
+  function fmt(n) {
+    return Number(n).toLocaleString('ru-RU');
+  }
+
+  function setText(id, txt) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = txt;
+  }
+
+  function esc(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function tooltipDefaults() {
+    return {
+      backgroundColor: '#18181b',
+      borderColor:     '#27272a',
+      borderWidth:     1,
+      titleColor:      '#f4f4f5',
+      bodyColor:       '#71717a',
+      padding:         10,
+      cornerRadius:    6,
+    };
+  }
+
+  function axisDefaults() {
+    return {
+      grid:  { color: '#1f1f23', drawBorder: false },
+      ticks: { color: '#71717a', font: { size: 11, family: 'Inter, system-ui, sans-serif' } },
+      border: { color: 'transparent' },
+    };
+  }
+
+  function setLoading(on) {
+    document.getElementById('refresh-icon').classList.toggle('spin', on);
+    ['kpi-row', 'panel-timeline', 'panel-direction', 'panel-table'].forEach(id =>
+      document.getElementById(id).classList.toggle('loading', on)
+    );
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('error-banner');
+    el.textContent = `Ошибка: ${msg}`;
+    el.classList.add('visible');
+  }
+
+  function clearError() {
+    document.getElementById('error-banner').classList.remove('visible');
+  }
+
+  /* ── Init ───────────────────────────────────────────────────────────── */
+  initDates();
+  loadData();
+
+  document.getElementById('date-from').addEventListener('change', loadData);
+  document.getElementById('date-to').addEventListener('change',   loadData);
+</script>
+</body>
+</html>

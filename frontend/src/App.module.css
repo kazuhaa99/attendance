@@ -1,3 +1,23 @@
+.stickyTop {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg);
+  margin-top: -28px;
+  padding-top: 28px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+
+@media (max-width: 768px) {
+  .stickyTop { margin-top: -16px; padding-top: 16px; }
+}
+
+@media (max-width: 480px) {
+  .stickyTop { margin-top: -12px; padding-top: 12px; }
+}
+
 .chartsRow {
   display: grid;
   grid-template-columns: 1fr 320px;
