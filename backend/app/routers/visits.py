@@ -25,8 +25,20 @@ def _zone_display(z: str | None) -> str:
     return _ZONE_CANONICAL.get(z, z)
 
 
+import pathlib as _pathlib
+
+_CERT_DIR = _pathlib.Path("/app/certs")
+_CLIENT_CERT = (_CERT_DIR / "client.crt", _CERT_DIR / "client.key")
+_CA_CERT = _CERT_DIR / "ca.crt"
+
 async def http_client():
-    async with httpx.AsyncClient(verify=False, timeout=httpx.Timeout(90.0, connect=10.0)) as client:
+    use_cert = _CLIENT_CERT[0].exists() and _CLIENT_CERT[1].exists()
+    use_ca   = _CA_CERT.exists()
+    async with httpx.AsyncClient(
+        verify=str(_CA_CERT) if use_ca else False,
+        cert=_CLIENT_CERT if use_cert else None,
+        timeout=httpx.Timeout(90.0, connect=10.0),
+    ) as client:
         yield client
 
 

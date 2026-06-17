@@ -3,6 +3,9 @@
 .env.prod
 .env.local
 
+# Certificates — никогда не коммитить
+certs/
+
 # Python
 __pycache__/
 *.py[cod]
