@@ -27,27 +27,33 @@ export default function AbsencePanel({ data, loading, error, anomalyNames, onFil
   }, [data?.rows, dateFrom, dateTo])
   const cols = data?.columns ?? (rows.length ? Object.keys(rows[0]) : [])
 
-  const summary = useMemo(() => {
-    const counts = {}
-    for (const r of rows) {
-      const ck = absenceColorKey(r.type_absence_name)
-      counts[ck] = (counts[ck] ?? 0) + 1
-    }
-    return counts
-  }, [rows])
-
-  const filtered = useMemo(() => {
-    setPage(1)
+  // Apply name + branch filters first — summary counts reflect current selection
+  const baseFiltered = useMemo(() => {
     let list = rows
-    if (typeFilter !== 'all') list = list.filter(r => absenceColorKey(r.type_absence_name) === typeFilter)
     if (globalName.trim()) {
       const q = normalize(globalName.trim())
       list = list.filter(r => {
         const name = normalize(String(r.full_name ?? r.lastname ?? ''))
-        const type = String(r.type_absence_name ?? '').toLowerCase()
-        return nameSearchMatch(name, q) || type.includes(q)
+        return nameSearchMatch(name, q)
       })
     }
+    if (branchFilter) list = list.filter(r => r.branch_name === branchFilter)
+    return list
+  }, [rows, globalName, branchFilter])
+
+  const summary = useMemo(() => {
+    const counts = {}
+    for (const r of baseFiltered) {
+      const ck = absenceColorKey(r.type_absence_name)
+      counts[ck] = (counts[ck] ?? 0) + 1
+    }
+    return counts
+  }, [baseFiltered])
+
+  const filtered = useMemo(() => {
+    setPage(1)
+    let list = baseFiltered
+    if (typeFilter !== 'all') list = list.filter(r => absenceColorKey(r.type_absence_name) === typeFilter)
     if (anomalyFilter && anomalyNames?.size) {
       list = list.filter(r => {
         const fullNorm = normalize(r.full_name || r.lastname || '')
@@ -55,11 +61,8 @@ export default function AbsencePanel({ data, loading, error, anomalyNames, onFil
         return anomalyNames.has(fi) || anomalyNames.has(fullNorm)
       })
     }
-    if (branchFilter) {
-      list = list.filter(r => r.branch_name === branchFilter)
-    }
     return list
-  }, [rows, typeFilter, globalName, anomalyFilter, anomalyNames, branchFilter])
+  }, [baseFiltered, typeFilter, anomalyFilter, anomalyNames])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const safePage   = Math.min(page, totalPages)
@@ -77,8 +80,8 @@ export default function AbsencePanel({ data, loading, error, anomalyNames, onFil
           <div className={s.iconBadge}><CalendarIcon /></div>
           <span className={s.title}>Отсутствия</span>
           {rows.length > 0 && <span className={s.pill}>{rows.length}</span>}
-          {globalName.trim() && filtered.length !== rows.length && (
-            <span className={s.filterPill}>{filtered.length} совпадений</span>
+          {(globalName.trim() || branchFilter) && baseFiltered.length !== rows.length && (
+            <span className={s.filterPill}>{baseFiltered.length} совпадений</span>
           )}
           {anomalyCount > 0 && (
             <span

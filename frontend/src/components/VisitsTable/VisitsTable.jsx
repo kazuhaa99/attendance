@@ -1,9 +1,16 @@
 import { useMemo, useState } from 'react'
 import {
-  buildAbsenceMap, getAbsenceForVisit, COLOR_LABELS,
+  buildAbsenceMap, getAbsenceForVisit, COLOR_LABELS, normalize,
 } from '../../utils/absenceUtils'
 import { fmtDateTime, fmtDate } from '../../utils/dateUtils'
 import s from './VisitsTable.module.css'
+
+function getBranch(r, lookup) {
+  if (!lookup) return '—'
+  if (r.iin) { const b = lookup.byIin.get(r.iin); if (b) return b }
+  const fi = normalize(r.name || '').split(' ').slice(0, 2).join(' ')
+  return lookup.byName.get(fi) || '—'
+}
 
 function fmt(n) {
   return Number(n).toLocaleString('ru-RU')
@@ -36,12 +43,13 @@ function AbsenceBadge({ info }) {
   )
 }
 
-function exportCSV(rows) {
-  const header = ['Дата и время', 'Имя', 'Карта №', 'Направление', 'Терминал', 'Зона', 'Хост']
+function exportCSV(rows, lookup) {
+  const header = ['Дата и время', 'Имя', 'Подразделение', 'Карта №', 'Направление', 'Терминал', 'Зона', 'Хост']
   const escape = v => `"${String(v ?? '').replace(/"/g, '""')}"`
   const lines = rows.map(r => [
     r.loged_at?.slice(0, 19).replace('T', ' ') ?? '',
     r.name,
+    getBranch(r, lookup),
     r.no,
     r.is_out === false ? 'Вход' : r.is_out === true ? 'Выход' : '',
     r.terminal,
@@ -65,7 +73,7 @@ const DownloadIcon = () => (
   </svg>
 )
 
-export default function VisitsTable({ rows, loading, onFilter, absenceData, globalName }) {
+export default function VisitsTable({ rows, loading, onFilter, absenceData, globalName, branchLookup, branchFilter }) {
   const [open, setOpen] = useState(true)
 
   const absenceMaps = useMemo(
@@ -76,6 +84,11 @@ export default function VisitsTable({ rows, loading, onFilter, absenceData, glob
   function click(key, value) {
     if (!onFilter || !value || value === '—') return
     onFilter({ [key]: value })
+  }
+
+  function clickBranch(branch) {
+    if (!onFilter || !branch || branch === '—') return
+    onFilter({ branch: branchFilter === branch ? '' : branch })
   }
 
   function clickDir(isOut) {
@@ -95,7 +108,7 @@ export default function VisitsTable({ rows, loading, onFilter, absenceData, glob
           <span className={s.pill}>{fmt(rows.length)} записей</span>
         </div>
         <div className={s.panelActions} onClick={e => e.stopPropagation()}>
-          <button className={s.exportBtn} onClick={() => exportCSV(rows)} title="Выгрузить CSV">
+          <button className={s.exportBtn} onClick={() => exportCSV(rows, branchLookup)} title="Выгрузить CSV">
             <DownloadIcon />
             CSV
           </button>
@@ -111,6 +124,7 @@ export default function VisitsTable({ rows, loading, onFilter, absenceData, glob
             <tr>
               <th>Дата и время</th>
               <th>Имя</th>
+              <th className={branchFilter ? s.thActive : ''}>Подразделение</th>
               <th>Карта №</th>
               <th>Направление</th>
               <th>Терминал</th>
@@ -121,13 +135,14 @@ export default function VisitsTable({ rows, loading, onFilter, absenceData, glob
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={7} className={s.empty}>
+                <td colSpan={8} className={s.empty}>
                   {loading ? 'Загрузка данных...' : 'Нет данных за указанный период'}
                 </td>
               </tr>
             ) : (
               rows.map((r, i) => {
                 const absInfo = getAbsenceForVisit(absenceMaps, r.name, r.loged_at, r.iin)
+                const branch  = getBranch(r, branchLookup)
                 return (
                   <tr key={i} className={absInfo ? s.anomalyRow : ''}>
                     <td className={s.mono}>{fmtDateTime(r.loged_at)}</td>
@@ -142,6 +157,13 @@ export default function VisitsTable({ rows, loading, onFilter, absenceData, glob
                         </span>
                         <AbsenceBadge info={absInfo} />
                       </div>
+                    </td>
+                    <td
+                      className={branch !== '—' ? s.clickable : s.dim}
+                      onClick={() => clickBranch(branch)}
+                      title={branch !== '—' ? `Фильтровать: ${branch}` : undefined}
+                    >
+                      {branch}
                     </td>
                     <td className={s.mono}>{r.no}</td>
                     <td>

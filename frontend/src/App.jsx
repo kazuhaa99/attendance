@@ -102,6 +102,19 @@ export default function App() {
 
   const absenceMaps = useMemo(() => buildAbsenceMap(absData?.rows ?? []), [absData?.rows])
 
+  // IIN → branch_name and normalized FI → branch_name for VisitsTable lookup
+  const branchLookup = useMemo(() => {
+    const byIin  = new Map()
+    const byName = new Map()
+    for (const r of absData?.rows ?? []) {
+      if (!r.branch_name) continue
+      if (r.login) byIin.set(r.login, r.branch_name)
+      const fi = normalize(r.full_name || '').split(' ').slice(0, 2).join(' ')
+      if (fi && !byName.has(fi)) byName.set(fi, r.branch_name)
+    }
+    return { byIin, byName }
+  }, [absData?.rows])
+
   // StaffKpi — when name filter active, scope to that person
   const staffKpi = useMemo(() => {
     const visitRows = nameFilteredRows
@@ -282,9 +295,14 @@ export default function App() {
               }, 100)
             }
           }
+          if (patch.branch != null) {
+            setBranchFilter(patch.branch)
+          }
         }}
         absenceData={absData}
         globalName={globalName}
+        branchLookup={branchLookup}
+        branchFilter={branchFilter}
       />
 
       <ScrollToTop />

@@ -185,6 +185,8 @@ tbody tr:hover td { background: var(--hover); }
 .badge.clickable { cursor: pointer; }
 .badge.clickable:hover { filter: brightness(1.25); }
 
+.thActive { color: var(--accent) !important; }
+
 /* Absence indicator in name cell */
 .nameWrap {
   display: flex;
