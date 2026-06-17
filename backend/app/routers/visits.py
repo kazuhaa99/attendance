@@ -61,7 +61,7 @@ async def get_visits(
     # loged_at=gte.YYYY-MM-DD  →  loged_at >= начало дня
     # loged_at=lte.YYYY-MM-DDT23:59:59  →  loged_at <= конец дня (включительно)
     parts = [
-        f"{settings.elpass_base_url}/el_tvisits?select=*,card(name,no)",
+        f"{settings.elpass_base_url}/el_tvisits?select=*,card(name,no,meta_,group)",
         f"loged_at=gte.{date_from}",
         f"loged_at=lte.{date_to}T23:59:59",
         "order=loged_at.desc",
@@ -174,7 +174,23 @@ def _transform(r: dict) -> dict:
         "zone":     _zone_display(r.get("zone")),
         "host":     r.get("host") or "—",
         "iin":      meta.get("iin") or "",
+        "group":    card.get("group") or "",
     }
+
+
+@router.get("/groups")
+async def get_groups(client: httpx.AsyncClient = Depends(http_client)) -> dict:
+    try:
+        token = await get_token(client)
+    except Exception:
+        return {}
+    resp = await client.get(
+        f"{settings.elpass_base_url}/el_tcardgroups?select=code,name&isDisabled=eq.false",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    if resp.status_code != 200:
+        return {}
+    return {g["code"]: g["name"] for g in resp.json() if g.get("code") and g.get("name")}
 
 
 @router.get("/health")

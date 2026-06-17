@@ -5,11 +5,9 @@ import {
 import { fmtDateTime, fmtDate } from '../../utils/dateUtils'
 import s from './VisitsTable.module.css'
 
-function getBranch(r, lookup) {
-  if (!lookup) return '—'
-  if (r.iin) { const b = lookup.byIin.get(r.iin); if (b) return b }
-  const fi = normalize(r.name || '').split(' ').slice(0, 2).join(' ')
-  return lookup.byName.get(fi) || '—'
+function getBranch(r, groupMap) {
+  if (!groupMap) return '—'
+  return groupMap[r.group] || '—'
 }
 
 function fmt(n) {
@@ -73,7 +71,7 @@ const DownloadIcon = () => (
   </svg>
 )
 
-export default function VisitsTable({ rows, loading, onFilter, absenceData, globalName, branchLookup, branchFilter }) {
+export default function VisitsTable({ rows, loading, onFilter, absenceData, globalName, groupMap, branchFilter }) {
   const [open, setOpen] = useState(true)
 
   const absenceMaps = useMemo(
@@ -108,7 +106,7 @@ export default function VisitsTable({ rows, loading, onFilter, absenceData, glob
           <span className={s.pill}>{fmt(rows.length)} записей</span>
         </div>
         <div className={s.panelActions} onClick={e => e.stopPropagation()}>
-          <button className={s.exportBtn} onClick={() => exportCSV(rows, branchLookup)} title="Выгрузить CSV">
+          <button className={s.exportBtn} onClick={() => exportCSV(rows, groupMap)} title="Выгрузить CSV">
             <DownloadIcon />
             CSV
           </button>
@@ -142,7 +140,7 @@ export default function VisitsTable({ rows, loading, onFilter, absenceData, glob
             ) : (
               rows.map((r, i) => {
                 const absInfo = getAbsenceForVisit(absenceMaps, r.name, r.loged_at, r.iin)
-                const branch  = getBranch(r, branchLookup)
+                const branch  = getBranch(r, groupMap)
                 return (
                   <tr key={i} className={absInfo ? s.anomalyRow : ''}>
                     <td className={s.mono}>{fmtDateTime(r.loged_at)}</td>

@@ -12,6 +12,7 @@ import ScrollToTop from './components/ScrollToTop/ScrollToTop'
 import MusicPlayer from './components/MusicPlayer/MusicPlayer'
 import { useVisits } from './hooks/useVisits'
 import { useAbsences } from './hooks/useAbsences'
+import { useGroups } from './hooks/useGroups'
 import { computeWorkStats } from './utils/workStats'
 import { computeHoursTable } from './utils/hoursUtils'
 import { buildAbsenceMap, getAbsenceForVisit, normalize, nameSearchMatch } from './utils/absenceUtils'
@@ -46,6 +47,7 @@ export default function App() {
 
   const { data, loading, error }                                   = useVisits(dateFrom, dateTo, activeFilters, refreshKey)
   const { data: absData, loading: absLoading, error: absError }    = useAbsences(dateFrom, dateTo, refreshKey)
+  const groupMap = useGroups()
 
   const { zones, terminals } = useMemo(() => {
     const rows = data?.rows ?? []
@@ -55,42 +57,27 @@ export default function App() {
     }
   }, [data?.rows])
 
-  const branches = useMemo(
-    () => [...new Set((absData?.rows ?? []).map(r => r.branch_name).filter(Boolean))].sort(),
-    [absData?.rows]
-  )
-
-  // IIN + name sets for selected branch (IIN is primary key, name is fallback)
-  const branchMatch = useMemo(() => {
-    if (!branchFilter) return null
-    const iins  = new Set()
+  const branches = useMemo(() => {
     const names = new Set()
-    for (const r of absData?.rows ?? []) {
-      if (r.branch_name !== branchFilter) continue
-      if (r.login) iins.add(r.login)
-      const fi = normalize(r.full_name || '').split(' ').slice(0, 2).join(' ')
-      if (fi) names.add(fi)
+    for (const r of data?.rows ?? []) {
+      const name = groupMap[r.group]
+      if (name) names.add(name)
     }
-    return { iins, names }
-  }, [absData?.rows, branchFilter])
+    return [...names].sort()
+  }, [data?.rows, groupMap])
 
-  // Rows filtered by name + branch — foundation for all stats/KPIs
+  // Rows filtered by name + group (API) — foundation for all stats/KPIs
   const nameFilteredRows = useMemo(() => {
     let rows = data?.rows ?? []
     if (globalName.trim()) {
       const norm = normalize(globalName.trim())
       rows = rows.filter(r => nameSearchMatch(normalize(r.name || ''), norm))
     }
-    if (branchMatch) {
-      const { iins, names } = branchMatch
-      rows = rows.filter(r => {
-        if (r.iin) return iins.has(r.iin)
-        const fi = normalize(r.name || '').split(' ').slice(0, 2).join(' ')
-        return names.has(fi)
-      })
+    if (branchFilter) {
+      rows = rows.filter(r => (groupMap[r.group] || '') === branchFilter)
     }
     return rows
-  }, [data?.rows, globalName, branchMatch])
+  }, [data?.rows, globalName, branchFilter, groupMap])
 
   // WorktimeStats and displayRows derived from nameFilteredRows
   const workStats = useMemo(() => computeWorkStats(nameFilteredRows), [nameFilteredRows])
@@ -102,18 +89,6 @@ export default function App() {
 
   const absenceMaps = useMemo(() => buildAbsenceMap(absData?.rows ?? []), [absData?.rows])
 
-  // IIN → branch_name and normalized FI → branch_name for VisitsTable lookup
-  const branchLookup = useMemo(() => {
-    const byIin  = new Map()
-    const byName = new Map()
-    for (const r of absData?.rows ?? []) {
-      if (!r.branch_name) continue
-      if (r.login) byIin.set(r.login, r.branch_name)
-      const fi = normalize(r.full_name || '').split(' ').slice(0, 2).join(' ')
-      if (fi && !byName.has(fi)) byName.set(fi, r.branch_name)
-    }
-    return { byIin, byName }
-  }, [absData?.rows])
 
   // StaffKpi — when name filter active, scope to that person
   const staffKpi = useMemo(() => {
@@ -127,8 +102,15 @@ export default function App() {
     let absRows = allAbsRows
     if (globalName.trim())
       absRows = absRows.filter(r => nameSearchMatch(normalize(r.full_name || r.lastname || ''), normalize(globalName.trim())))
-    if (branchFilter)
-      absRows = absRows.filter(r => r.branch_name === branchFilter)
+    if (branchFilter) {
+      // Filter absences by IIN/name of people seen in the selected group
+      const groupIins  = new Set(visitRows.map(r => r.iin).filter(Boolean))
+      const groupNames = new Set(visitRows.map(r => normalize(r.name || '').split(' ').slice(0, 2).join(' ')).filter(Boolean))
+      absRows = absRows.filter(r =>
+        (r.login && groupIins.has(r.login)) ||
+        groupNames.has(normalize(r.full_name || r.lastname || '').split(' ').slice(0, 2).join(' '))
+      )
+    }
 
     // Use IIN as primary key, fall back to normalized FI name
     const toFI = s => s.split(' ').slice(0, 2).join(' ')
@@ -301,7 +283,7 @@ export default function App() {
         }}
         absenceData={absData}
         globalName={globalName}
-        branchLookup={branchLookup}
+        groupMap={groupMap}
         branchFilter={branchFilter}
       />
 
