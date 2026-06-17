@@ -60,17 +60,18 @@ export default function App() {
     [absData?.rows]
   )
 
-  // Set of normalized FI names belonging to the selected branch (for cross-filtering visits)
-  const branchNames = useMemo(() => {
+  // IIN + name sets for selected branch (IIN is primary key, name is fallback)
+  const branchMatch = useMemo(() => {
     if (!branchFilter) return null
+    const iins  = new Set()
     const names = new Set()
     for (const r of absData?.rows ?? []) {
-      if (r.branch_name === branchFilter) {
-        const fi = normalize(r.full_name || '').split(' ').slice(0, 2).join(' ')
-        if (fi) names.add(fi)
-      }
+      if (r.branch_name !== branchFilter) continue
+      if (r.login) iins.add(r.login)
+      const fi = normalize(r.full_name || '').split(' ').slice(0, 2).join(' ')
+      if (fi) names.add(fi)
     }
-    return names
+    return { iins, names }
   }, [absData?.rows, branchFilter])
 
   // Rows filtered by name + branch — foundation for all stats/KPIs
@@ -80,14 +81,16 @@ export default function App() {
       const norm = normalize(globalName.trim())
       rows = rows.filter(r => nameSearchMatch(normalize(r.name || ''), norm))
     }
-    if (branchNames) {
+    if (branchMatch) {
+      const { iins, names } = branchMatch
       rows = rows.filter(r => {
+        if (r.iin) return iins.has(r.iin)
         const fi = normalize(r.name || '').split(' ').slice(0, 2).join(' ')
-        return branchNames.has(fi)
+        return names.has(fi)
       })
     }
     return rows
-  }, [data?.rows, globalName, branchNames])
+  }, [data?.rows, globalName, branchMatch])
 
   // WorktimeStats and displayRows derived from nameFilteredRows
   const workStats = useMemo(() => computeWorkStats(nameFilteredRows), [nameFilteredRows])
@@ -114,11 +117,13 @@ export default function App() {
     if (branchFilter)
       absRows = absRows.filter(r => r.branch_name === branchFilter)
 
-    // normalize both to first-2-words so FI (visits) and FIO (absences) deduplicate correctly
+    // Use IIN as primary key, fall back to normalized FI name
     const toFI = s => s.split(' ').slice(0, 2).join(' ')
-    const visitedNames = new Set(visitRows.map(r => r.name ? toFI(normalize(r.name)) : '').filter(Boolean))
-    const absentNames  = new Set(absRows.map(r => toFI(r._norm_full || normalize(r.full_name || ''))).filter(Boolean))
-    const total = new Set([...visitedNames, ...absentNames]).size
+    const visitedKeys = new Set(visitRows.map(r => r.iin || (r.name ? toFI(normalize(r.name)) : '')).filter(Boolean))
+    const absentKeys  = new Set(absRows.map(r => r.login || toFI(r._norm_full || normalize(r.full_name || ''))).filter(Boolean))
+    const total = new Set([...visitedKeys, ...absentKeys]).size
+    const visitedNames = visitedKeys
+    const absentNames  = absentKeys
 
     return {
       total,
@@ -144,7 +149,7 @@ export default function App() {
     if (!absenceMaps.fullMap.size && !absenceMaps.lastnameMap.size) return new Set()
     const names = new Set()
     for (const r of data?.rows ?? []) {
-      if (getAbsenceForVisit(absenceMaps, r.name, r.loged_at)) names.add(normalize(r.name || ''))
+      if (getAbsenceForVisit(absenceMaps, r.name, r.loged_at, r.iin)) names.add(normalize(r.name || ''))
     }
     return names
   }, [absenceMaps, data?.rows])

@@ -81,6 +81,7 @@ export function buildAbsenceMap(absenceRows) {
   const fullMap     = new Map()
   const fiMap       = new Map()
   const lastnameMap = new Map()
+  const iinMap      = new Map()
 
   for (const row of absenceRows) {
     const info = {
@@ -92,47 +93,52 @@ export function buildAbsenceMap(absenceRows) {
 
     const normFull = row._norm_full     ?? normalize(row.full_name ?? '')
     const normLast = row._norm_lastname ?? normalize(row.lastname ?? '')
-    // FI = first two words of full name (matches visit API format)
     const normFI   = normFull.split(' ').slice(0, 2).join(' ')
 
     if (normFull && !fullMap.has(normFull))     fullMap.set(normFull, info)
     if (normFI   && !fiMap.has(normFI))         fiMap.set(normFI, info)
     if (normLast && !lastnameMap.has(normLast)) lastnameMap.set(normLast, info)
+    if (row.login && !iinMap.has(row.login))    iinMap.set(row.login, info)
   }
 
-  return { fullMap, fiMap, lastnameMap }
+  return { fullMap, fiMap, lastnameMap, iinMap }
 }
 
 /**
  * Returns absence info if the employee is absent on visitDate, else null.
  * Matching order:
+ *   0. IIN exact match (most reliable)
  *   1. Exact normalized full name
  *   2. First 2 words of absence name vs visit name (FI matching)
  *   3. Last name only (fallback)
  */
-export function getAbsenceForVisit(maps, employeeName, visitDate) {
-  if (!employeeName || !visitDate || !maps) return null
-  const { fullMap, fiMap, lastnameMap } = maps
+function _checkDates(info, date) {
+  if (!info) return null
+  if (info.startdate && info.enddate) {
+    const s = info.startdate.slice(0, 10)
+    const e = info.enddate.slice(0, 10)
+    return date >= s && date <= e ? info : null
+  }
+  return info
+}
+
+export function getAbsenceForVisit(maps, employeeName, visitDate, iin) {
+  if (!visitDate || !maps) return null
+  const { fullMap, fiMap, lastnameMap, iinMap } = maps
+  const date = visitDate.slice(0, 10)
+
+  if (iin && iinMap?.has(iin)) return _checkDates(iinMap.get(iin), date)
+
+  if (!employeeName) return null
   if (!fullMap.size && !fiMap.size && !lastnameMap.size) return null
 
   const normFull = normalize(employeeName)
   const normLast = normalize(employeeName.split(' ')[0])
-  const date     = visitDate.slice(0, 10)
 
-  const info = fullMap.get(normFull)
-    ?? fiMap.get(normFull)       // visit name (FI) found in FI map
-    ?? lastnameMap.get(normLast)
-    ?? null
-
-  if (!info) return null
-
-  if (info.startdate && info.enddate) {
-    const s = info.startdate.slice(0, 10)
-    const e = info.enddate.slice(0, 10)
-    if (date >= s && date <= e) return info
-    return null
-  }
-  return info
+  return _checkDates(
+    fullMap.get(normFull) ?? fiMap.get(normFull) ?? lastnameMap.get(normLast) ?? null,
+    date
+  )
 }
 
 export function daysBetween(start, end) {

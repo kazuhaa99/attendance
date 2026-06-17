@@ -164,6 +164,7 @@ def _parse_total(content_range: str) -> int | None:
 
 def _transform(r: dict) -> dict:
     card = r.get("card") or {}
+    meta = card.get("meta_") or {}
     return {
         "loged_at": r.get("loged_at", ""),
         "name":     card.get("name") or "—",
@@ -172,6 +173,7 @@ def _transform(r: dict) -> dict:
         "terminal": r.get("terminal") or "—",
         "zone":     _zone_display(r.get("zone")),
         "host":     r.get("host") or "—",
+        "iin":      meta.get("iin") or "",
     }
 
 

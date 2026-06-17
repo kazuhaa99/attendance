@@ -127,7 +127,7 @@ export default function VisitsTable({ rows, loading, onFilter, absenceData, glob
               </tr>
             ) : (
               rows.map((r, i) => {
-                const absInfo = getAbsenceForVisit(absenceMaps, r.name, r.loged_at)
+                const absInfo = getAbsenceForVisit(absenceMaps, r.name, r.loged_at, r.iin)
                 return (
                   <tr key={i} className={absInfo ? s.anomalyRow : ''}>
                     <td className={s.mono}>{fmtDateTime(r.loged_at)}</td>
