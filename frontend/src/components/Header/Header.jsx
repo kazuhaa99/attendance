@@ -1,7 +1,7 @@
 import s from './Header.module.css'
 import ThemePicker from '../ThemePicker/ThemePicker'
 
-export default function Header({ dateFrom, dateTo, lastUpdated, loading, onDateFromChange, onDateToChange, onRefresh }) {
+export default function Header({ dateFrom, dateTo, lastUpdated, loading, onDateFromChange, onDateToChange, onRefresh, settingsSlot }) {
   const timeStr = lastUpdated
     ? 'обновлено в ' + lastUpdated.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
     : '—'
@@ -46,6 +46,7 @@ export default function Header({ dateFrom, dateTo, lastUpdated, loading, onDateF
         </div>
 
         <ThemePicker />
+        {settingsSlot}
 
         <button className={s.btn} onClick={onRefresh} disabled={loading}>
           <svg

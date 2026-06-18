@@ -22,7 +22,9 @@ export default function KPIRow({ data, rows, loading, staffKpi, absLoading, pers
   const uniqueCards = new Set(filtered.map(r => r.no).filter(Boolean)).size
   const inCount     = filtered.filter(r => r.is_out === false).length
   const outCount    = filtered.filter(r => r.is_out === true).length
-  const devices     = new Set(filtered.map(r => r.terminal).filter(v => v && v !== '—')).size
+  const zoneSet     = new Set(filtered.map(r => r.zone).filter(v => v && v !== '—'))
+  const zoneCount   = zoneSet.size
+  const terminalCount = new Set(filtered.map(r => r.terminal).filter(v => v && v !== '—')).size
 
   const total    = globalName ? filtered.length : (data?.total ?? null)
   const totalSub = globalName
@@ -40,7 +42,7 @@ export default function KPIRow({ data, rows, loading, staffKpi, absLoading, pers
       <KPI label="Уникальных карт" value={fmt(uniqueCards)}  sub={isFiltered ? 'карт у сотрудника' : 'посетителей'} />
       <KPI label="Входов"          value={fmt(inCount)}      sub="isOut = false" color="var(--green)" />
       <KPI label="Выходов"         value={fmt(outCount)}     sub="isOut = true"  color="var(--red)" />
-      <KPI label="Устройств"       value={fmt(devices)}      sub="уникальных terminal" />
+      <KPI label="Устройств"       value={fmt(terminalCount)} sub={`${zoneCount} ${zoneCount === 1 ? 'зона' : zoneCount < 5 ? 'зоны' : 'зон'}`} />
 
       {isFiltered && personHours ? (
         <>

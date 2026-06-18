@@ -5,9 +5,9 @@
   background: var(--bg);
   margin-top: -28px;
   padding-top: 28px;
-  padding-bottom: 12px;
+  padding-bottom: 8px;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 @media (max-width: 768px) {
@@ -48,6 +48,154 @@
   margin-bottom: 20px;
 }
 
+/* ── Section nav bar ──────────────────────────────────────── */
+.sectionBar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.secBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 9px;
+  height: 26px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 11px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.secBtn:hover {
+  border-color: var(--accent, #3b82f6);
+  color: var(--text);
+}
+
+.secBtnOn {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.35);
+  color: var(--accent, #3b82f6);
+}
+
+.secBtnOff {
+  opacity: 0.45;
+}
+
+.secBtnOff:hover {
+  opacity: 0.7;
+}
+
+.secIcon {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+/* ── Settings button (in header) ──────────────────────────── */
+.settingsWrap {
+  position: relative;
+}
+
+.settingsBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s;
+}
+
+.settingsBtn:hover {
+  border-color: var(--accent, #3b82f6);
+  color: var(--text);
+}
+
+.settingsBtnOpen {
+  border-color: var(--accent, #3b82f6);
+  color: var(--accent, #3b82f6);
+}
+
+.settingsDropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 0;
+  min-width: 200px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  z-index: 200;
+}
+
+.settingsTitle {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 4px 14px 8px;
+}
+
+.settingsOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 14px;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s;
+}
+
+.settingsOption:hover {
+  background: var(--hover, rgba(255,255,255,0.05));
+}
+
+.settingsCheck {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.12s;
+}
+
+.settingsCheckOn {
+  border-color: var(--accent, #3b82f6);
+  background: var(--accent, #3b82f6);
+}
+
+.sectionHidden {
+  display: none;
+}
+
 @media (max-width: 1000px) {
   .chartsRow { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+  .sectionBar { flex-wrap: wrap; }
 }

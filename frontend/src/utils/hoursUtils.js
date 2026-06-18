@@ -46,6 +46,25 @@ export function buildDateRange(from, to) {
   return dates
 }
 
+export function groupDatesByWeek(dates) {
+  if (!dates.length) return []
+  const weeks = []
+  let current = null
+  for (const date of dates) {
+    const d = new Date(date + 'T00:00:00')
+    const day = d.getDay()
+    const mon = new Date(d)
+    mon.setDate(d.getDate() - ((day + 6) % 7))
+    const weekKey = mon.toISOString().slice(0, 10)
+    if (!current || current.weekKey !== weekKey) {
+      current = { weekKey, dates: [] }
+      weeks.push(current)
+    }
+    current.dates.push(date)
+  }
+  return weeks
+}
+
 export function fmtMin(mins) {
   if (mins == null) return null
   const h = Math.floor(mins / 60)

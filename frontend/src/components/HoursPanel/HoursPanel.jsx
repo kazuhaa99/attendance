@@ -1,14 +1,34 @@
 import { useState, useMemo } from 'react'
-import { computeHoursTable, fmtMin, hoursTier } from '../../utils/hoursUtils'
+import { computeHoursTable, groupDatesByWeek, fmtMin, hoursTier } from '../../utils/hoursUtils'
 import s from './HoursPanel.module.css'
 
 const PAGE_SIZE = 25
 
 const DAY_SHORT = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
+const MONTH_SHORT = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
 
 function fmtColHeader(date) {
   const d = new Date(date + 'T00:00:00')
   return { day: DAY_SHORT[d.getDay()], num: date.slice(8) }
+}
+
+function fmtWeekLabel(week) {
+  const first = new Date(week.dates[0] + 'T00:00:00')
+  const last = new Date(week.dates[week.dates.length - 1] + 'T00:00:00')
+  const d1 = first.getDate()
+  const d2 = last.getDate()
+  const m1 = MONTH_SHORT[first.getMonth()]
+  const m2 = MONTH_SHORT[last.getMonth()]
+  if (m1 === m2) return `${d1}–${d2} ${m1}`
+  return `${d1} ${m1} – ${d2} ${m2}`
+}
+
+function weekMinutes(person, weekDates) {
+  let total = 0
+  for (const d of weekDates) {
+    if (person.dayMin[d] != null) total += person.dayMin[d]
+  }
+  return total
 }
 
 export default function HoursPanel({ rows, dateFrom, dateTo, onFilterByEmployee, globalName = '' }) {
@@ -19,6 +39,9 @@ export default function HoursPanel({ rows, dateFrom, dateTo, onFilterByEmployee,
     () => computeHoursTable(rows, dateFrom, dateTo),
     [rows, dateFrom, dateTo]
   )
+
+  const weeks = useMemo(() => groupDatesByWeek(dates), [dates])
+  const hasMultipleWeeks = weeks.length > 1
 
   const filtered = useMemo(() => {
     setPage(1)
@@ -31,11 +54,12 @@ export default function HoursPanel({ rows, dateFrom, dateTo, onFilterByEmployee,
   const safePage   = Math.min(page, totalPages)
   const pageRows   = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
 
-  // Weekly total across all people
   const grandTotal = useMemo(
     () => people.reduce((s, p) => s + p.totalMin, 0),
     [people]
   )
+
+  const totalCols = dates.length + (hasMultipleWeeks ? weeks.length : 0) + 2
 
   if (!rows.length) return null
 
@@ -72,23 +96,45 @@ export default function HoursPanel({ rows, dateFrom, dateTo, onFilterByEmployee,
           <div className={s.scroll}>
             <table>
               <thead>
+                {hasMultipleWeeks && (
+                  <tr className={s.weekHeaderRow}>
+                    <th className={s.nameCol} />
+                    {weeks.map((w, wi) => (
+                      <th
+                        key={w.weekKey}
+                        colSpan={w.dates.length + 1}
+                        className={`${s.weekHeader} ${wi > 0 ? s.weekBorderLeft : ''}`}
+                      >
+                        {fmtWeekLabel(w)}
+                      </th>
+                    ))}
+                    <th className={s.totalCol} />
+                  </tr>
+                )}
                 <tr>
                   <th className={s.nameCol}>Сотрудник</th>
-                  {dates.map(d => {
-                    const h = fmtColHeader(d)
-                    return (
-                      <th key={d} className={s.dayCol}>
-                        <span className={s.dayNum}>{h.num}</span>
-                        <span className={s.dayName}>{h.day}</span>
-                      </th>
+                  {weeks.map((w, wi) => (
+                    w.dates.map((d, di) => {
+                      const h = fmtColHeader(d)
+                      const isFirstInWeek = hasMultipleWeeks && di === 0 && wi > 0
+                      return (
+                        <th key={d} className={`${s.dayCol} ${isFirstInWeek ? s.weekBorderLeft : ''}`}>
+                          <span className={s.dayNum}>{h.num}</span>
+                          <span className={s.dayName}>{h.day}</span>
+                        </th>
+                      )
+                    }).concat(
+                      hasMultipleWeeks
+                        ? [<th key={`wt-${w.weekKey}`} className={s.weekTotalCol}>Нед.</th>]
+                        : []
                     )
-                  })}
+                  )).flat()}
                   <th className={s.totalCol}>Итого</th>
                 </tr>
               </thead>
               <tbody>
                 {pageRows.length === 0 ? (
-                  <tr><td colSpan={dates.length + 2} className={s.empty}>Нет данных</td></tr>
+                  <tr><td colSpan={totalCols} className={s.empty}>Нет данных</td></tr>
                 ) : pageRows.map((p, i) => (
                   <tr key={p.no ?? i}>
                     <td
@@ -96,15 +142,30 @@ export default function HoursPanel({ rows, dateFrom, dateTo, onFilterByEmployee,
                       title={onFilterByEmployee ? `Показать визиты: ${p.name}` : p.name}
                       onClick={() => onFilterByEmployee?.(p.name)}
                     >{p.name}</td>
-                    {dates.map(d => {
-                      const mins  = p.dayMin[d]
-                      const tier  = hoursTier(mins)
-                      return (
-                        <td key={d} className={`${s.cell} ${tier ? s[tier] : s.empty_cell}`}>
-                          {mins != null ? fmtMin(mins) : <span className={s.dash}>—</span>}
-                        </td>
+                    {weeks.map((w, wi) => (
+                      w.dates.map((d, di) => {
+                        const mins = p.dayMin[d]
+                        const tier = hoursTier(mins)
+                        const isFirstInWeek = hasMultipleWeeks && di === 0 && wi > 0
+                        return (
+                          <td key={d} className={`${s.cell} ${tier ? s[tier] : s.empty_cell} ${isFirstInWeek ? s.weekBorderLeft : ''}`}>
+                            {mins != null ? fmtMin(mins) : <span className={s.dash}>—</span>}
+                          </td>
+                        )
+                      }).concat(
+                        hasMultipleWeeks
+                          ? [(() => {
+                              const wm = weekMinutes(p, w.dates)
+                              const wTier = hoursTier(Math.round(wm / w.dates.length))
+                              return (
+                                <td key={`wt-${w.weekKey}`} className={`${s.cell} ${s.weekTotalCell} ${wTier ? s[wTier] : ''}`}>
+                                  {wm > 0 ? fmtMin(wm) : <span className={s.dash}>—</span>}
+                                </td>
+                              )
+                            })()]
+                          : []
                       )
-                    })}
+                    )).flat()}
                     <td className={`${s.cell} ${s.totalCell}`}>{fmtMin(p.totalMin)}</td>
                   </tr>
                 ))}

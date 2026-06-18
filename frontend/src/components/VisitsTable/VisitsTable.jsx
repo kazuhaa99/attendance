@@ -71,8 +71,17 @@ const DownloadIcon = () => (
   </svg>
 )
 
+const PAGE_SIZE = 50
+
 export default function VisitsTable({ rows, loading, onFilter, absenceData, globalName, groupMap, branchFilter }) {
   const [open, setOpen] = useState(true)
+  const [page, setPage] = useState(1)
+
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE))
+  const safePage = Math.min(page, totalPages)
+  const pageRows = useMemo(() => rows.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE), [rows, safePage])
+
+  useMemo(() => { setPage(1) }, [rows])
 
   const absenceMaps = useMemo(
     () => buildAbsenceMap(absenceData?.rows ?? []),
@@ -131,14 +140,14 @@ export default function VisitsTable({ rows, loading, onFilter, absenceData, glob
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 ? (
+            {pageRows.length === 0 ? (
               <tr>
                 <td colSpan={8} className={s.empty}>
                   {loading ? 'Загрузка данных...' : 'Нет данных за указанный период'}
                 </td>
               </tr>
             ) : (
-              rows.map((r, i) => {
+              pageRows.map((r, i) => {
                 const absInfo = getAbsenceForVisit(absenceMaps, r.name, r.loged_at, r.iin)
                 const branch  = getBranch(r, groupMap)
                 return (
@@ -189,10 +198,34 @@ export default function VisitsTable({ rows, loading, onFilter, absenceData, glob
           </tbody>
         </table>
       </div>
+
+          {totalPages > 1 && (
+            <div className={s.pagination}>
+              <button className={s.pgBtn} onClick={() => setPage(p => Math.max(1, p - 1))} disabled={safePage === 1}>‹</button>
+              {pageNumbers(safePage, totalPages).map((n, i) =>
+                n === '…'
+                  ? <span key={`d${i}`} className={s.pgDots}>…</span>
+                  : <button key={n} className={`${s.pgBtn} ${n === safePage ? s.pgActive : ''}`} onClick={() => setPage(n)}>{n}</button>
+              )}
+              <button className={s.pgBtn} onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={safePage === totalPages}>›</button>
+              <span className={s.pgInfo}>{(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, rows.length)} из {fmt(rows.length)}</span>
+            </div>
+          )}
+
         </div>
       </div>
     </div>
   )
+}
+
+function pageNumbers(current, total) {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
+  const pages = [1]
+  if (current > 3) pages.push('…')
+  for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) pages.push(i)
+  if (current < total - 2) pages.push('…')
+  pages.push(total)
+  return pages
 }
 
 const ActivityIcon = () => (
