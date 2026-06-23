@@ -20,8 +20,8 @@ import { buildAbsenceMap, getAbsenceForVisit, normalize, nameSearchMatch } from 
 import s from './App.module.css'
 
 function defaultDates() {
-  const fmt = d => d.toISOString().slice(0, 10)
-  return { from: '2026-06-10', to: fmt(new Date()) }
+  const today = new Date().toISOString().slice(0, 10)
+  return { from: today, to: today }
 }
 
 const EMPTY_FILTERS = { zone: '', terminal: '', direction: '', noName: false }
@@ -148,12 +148,13 @@ export default function App() {
     const visitedNames = visitedKeys
     const absentNames  = absentKeys
 
+    const expectedCount = total - absentNames.size
     return {
       total,
+      expectedCount,
       visitedCount: visitedNames.size,
       absentCount:  absentNames.size,
-      visitedPct:   total ? Math.round(visitedNames.size / total * 100) : null,
-      absentPct:    total ? Math.round(absentNames.size  / total * 100) : null,
+      visitedPct:   expectedCount ? Math.round(visitedNames.size / expectedCount * 100) : null,
     }
   }, [nameFilteredRows, absData?.rows, dateFrom, dateTo, debouncedName, branchFilter])
 

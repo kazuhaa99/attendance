@@ -68,22 +68,22 @@ export default function KPIRow({ data, rows, loading, staffKpi, absLoading, pers
       ) : (
         <>
           <KPI
-            label="Сотрудников"
-            value={staffLoading ? '…' : fmt(staffKpi?.total)}
-            sub="пришли + отсутствовали"
+            label="Должны прийти"
+            value={staffLoading ? '…' : fmt(staffKpi?.expectedCount)}
+            sub={staffLoading ? '' : `всего пропусков: ${fmt(staffKpi?.total)}`}
             loading={staffLoading}
           />
           <KPI
-            label="% явки"
-            value={staffLoading ? '…' : pct(staffKpi?.visitedPct)}
-            sub={staffLoading ? '' : `${fmt(staffKpi?.visitedCount)} чел. пришло`}
+            label="Пришло"
+            value={staffLoading ? '…' : fmt(staffKpi?.visitedCount)}
+            sub={staffLoading ? '' : `${pct(staffKpi?.visitedPct)} от ожидаемых`}
             color="var(--green)"
             loading={staffLoading}
           />
           <KPI
-            label="% отсутствия"
-            value={staffLoading ? '…' : pct(staffKpi?.absentPct)}
-            sub={staffLoading ? '' : `${fmt(staffKpi?.absentCount)} чел. в отпуске/б/л`}
+            label="Отсутствуют"
+            value={staffLoading ? '…' : fmt(staffKpi?.absentCount)}
+            sub="отпуск / больничный"
             color="var(--red)"
             loading={staffLoading}
           />
