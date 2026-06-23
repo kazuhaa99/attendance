@@ -13,6 +13,7 @@ import MusicPlayer from './components/MusicPlayer/MusicPlayer'
 import { useVisits } from './hooks/useVisits'
 import { useAbsences } from './hooks/useAbsences'
 import { useGroups } from './hooks/useGroups'
+import { useStaffCount } from './hooks/useStaffCount'
 import { useDebounce } from './hooks/useDebounce'
 import { computeWorkStats } from './utils/workStats'
 import { computeHoursTable } from './utils/hoursUtils'
@@ -77,6 +78,7 @@ export default function App() {
   const { data, loading, error }                                   = useVisits(dateFrom, dateTo, activeFilters, refreshKey)
   const { data: absData, loading: absLoading, error: absError }    = useAbsences(dateFrom, dateTo, refreshKey)
   const groupMap = useGroups()
+  const staffCount = useStaffCount()
 
   const { zones, terminals } = useMemo(() => {
     const rows = data?.rows ?? []
@@ -144,19 +146,17 @@ export default function App() {
     const toFI = s => s.split(' ').slice(0, 2).join(' ')
     const visitedKeys = new Set(visitRows.map(r => r.iin || (r.name ? toFI(normalize(r.name)) : '')).filter(Boolean))
     const absentKeys  = new Set(absRows.map(r => r.login || toFI(r._norm_full || normalize(r.full_name || ''))).filter(Boolean))
-    const total = new Set([...visitedKeys, ...absentKeys]).size
-    const visitedNames = visitedKeys
-    const absentNames  = absentKeys
+    const total = staffCount ?? new Set([...visitedKeys, ...absentKeys]).size
+    const expectedCount = total - absentKeys.size
 
-    const expectedCount = total - absentNames.size
     return {
       total,
       expectedCount,
-      visitedCount: visitedNames.size,
-      absentCount:  absentNames.size,
-      visitedPct:   expectedCount ? Math.round(visitedNames.size / expectedCount * 100) : null,
+      visitedCount: visitedKeys.size,
+      absentCount:  absentKeys.size,
+      visitedPct:   expectedCount > 0 ? Math.round(visitedKeys.size / expectedCount * 100) : null,
     }
-  }, [nameFilteredRows, absData?.rows, dateFrom, dateTo, debouncedName, branchFilter])
+  }, [nameFilteredRows, absData?.rows, dateFrom, dateTo, debouncedName, branchFilter, staffCount])
 
   const personHours = useMemo(() => {
     if (!debouncedName.trim() || !nameFilteredRows.length) return null

@@ -193,6 +193,31 @@ async def get_groups(client: httpx.AsyncClient = Depends(http_client)) -> dict:
     return {g["code"]: g["name"] for g in resp.json() if g.get("code") and g.get("name")}
 
 
+@router.get("/staff-count")
+async def get_staff_count(client: httpx.AsyncClient = Depends(http_client)) -> dict:
+    try:
+        token = await get_token(client)
+    except Exception:
+        return {"count": 0}
+    resp = await client.get(
+        f"{settings.elpass_base_url}/el_tcards?isDisabled=eq.false&deleted_at=is.null&select=uuid",
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Prefer": "count=exact",
+            "Range": "0-0",
+        },
+    )
+    if resp.status_code not in (200, 206):
+        return {"count": 0}
+    cr = resp.headers.get("content-range", "")
+    if "/" in cr:
+        try:
+            return {"count": int(cr.split("/")[-1])}
+        except ValueError:
+            pass
+    return {"count": 0}
+
+
 @router.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
