@@ -28,18 +28,19 @@ def _patch_ssl() -> None:
         _orig_init = _tssl.TSSLBase.__init__
         def _patched_init(self, server_side, host, ssl_opts):
             ssl_opts = dict(ssl_opts) if ssl_opts else {}
-            ssl_opts.setdefault('cert_reqs', ssl.CERT_NONE)
+            ssl_opts.pop('cert_reqs', None)
+            ssl_opts.pop('ca_certs', None)
+            if 'ssl_context' not in ssl_opts:
+                ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+                ctx.check_hostname = False
+                ctx.verify_mode = ssl.CERT_NONE
+                try:
+                    ctx.set_ciphers('ALL:@SECLEVEL=0')
+                except Exception:
+                    pass
+                ssl_opts['ssl_context'] = ctx
             _orig_init(self, server_side, host, ssl_opts)
         _tssl.TSSLBase.__init__ = _patched_init
-
-        _orig_ctx = _tssl.TSSLBase._init_context
-        def _patched_ctx(self, ssl_version):
-            _orig_ctx(self, ssl_version)
-            if getattr(self, '_context', None):
-                self._context.check_hostname = False
-                self._context.verify_mode = ssl.CERT_NONE
-                self._context.set_ciphers('ALL:@SECLEVEL=0')
-        _tssl.TSSLBase._init_context = _patched_ctx
     except Exception:
         pass
 
