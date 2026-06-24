@@ -75,12 +75,24 @@ def _broad_range() -> tuple[str, str]:
 # ─────────────────────────────────────────────────────────────────────────────
 
 
+def _make_ssl_ctx():
+    import ssl
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    try:
+        ctx.set_ciphers('ALL:@SECLEVEL=0')
+    except Exception:
+        pass
+    return ctx
+
+
 def _query_sync() -> list[dict]:
     from impala.dbapi import connect
 
     date_from, date_to = _broad_range()
 
-    conn = connect(
+    kw = dict(
         host=settings.impala_host,
         port=settings.impala_port,
         database=settings.impala_database,
@@ -90,6 +102,10 @@ def _query_sync() -> list[dict]:
         password=settings.impala_password,
         timeout=30,
     )
+    if settings.impala_ssl:
+        kw['ssl_context'] = _make_ssl_ctx()
+
+    conn = connect(**kw)
     try:
         cur = conn.cursor()
         cur.execute(
