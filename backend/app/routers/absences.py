@@ -19,19 +19,27 @@ def _normalize(s: str) -> str:
 
 
 def _patch_ssl() -> None:
-    """Lower OpenSSL security level to allow RSA key-exchange ciphers
-    required by Impala (AES256-GCM-SHA384).  Python 3.12 + OpenSSL 3.x
-    disable them by default."""
+    """Patch thrift SSL to work with OpenSSL 3.5+ which requires ca_certs
+    and disables legacy ciphers needed by Impala."""
     try:
+        import ssl
         import thrift.transport.TSSLSocket as _tssl
-        _orig = _tssl.TSSLBase._init_context
 
-        def _patched(self, ssl_version):
-            _orig(self, ssl_version)
+        _orig_init = _tssl.TSSLBase.__init__
+        def _patched_init(self, server_side, host, ssl_opts):
+            ssl_opts = dict(ssl_opts) if ssl_opts else {}
+            ssl_opts.setdefault('cert_reqs', ssl.CERT_NONE)
+            _orig_init(self, server_side, host, ssl_opts)
+        _tssl.TSSLBase.__init__ = _patched_init
+
+        _orig_ctx = _tssl.TSSLBase._init_context
+        def _patched_ctx(self, ssl_version):
+            _orig_ctx(self, ssl_version)
             if getattr(self, '_context', None):
-                self._context.set_ciphers('DEFAULT:@SECLEVEL=0')
-
-        _tssl.TSSLBase._init_context = _patched
+                self._context.check_hostname = False
+                self._context.verify_mode = ssl.CERT_NONE
+                self._context.set_ciphers('ALL:@SECLEVEL=0')
+        _tssl.TSSLBase._init_context = _patched_ctx
     except Exception:
         pass
 
