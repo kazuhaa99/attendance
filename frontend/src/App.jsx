@@ -130,13 +130,16 @@ export default function App() {
   const absenceMaps = useMemo(() => buildAbsenceMap(absData?.rows ?? []), [absData?.rows])
 
 
-  // IIN → zone mapping from ALL visit data (for zone-aware absence filtering)
-  const allIinZones = useMemo(() => {
+  // Person → zones mapping from ALL visit data (IIN or name → Set of zones)
+  const personZones = useMemo(() => {
+    const toFI = s => normalize(s).split(' ').slice(0, 2).join(' ')
     const map = new Map()
     for (const r of data?.rows ?? []) {
-      if (r.iin && r.zone) {
-        if (!map.has(r.iin)) map.set(r.iin, new Set())
-        map.get(r.iin).add(r.zone)
+      if (!r.zone || r.zone === '—') continue
+      const keys = [r.iin, r.name ? toFI(r.name) : ''].filter(Boolean)
+      for (const k of keys) {
+        if (!map.has(k)) map.set(k, new Set())
+        map.get(k).add(r.zone)
       }
     }
     return map
@@ -161,12 +164,14 @@ export default function App() {
     if (debouncedName.trim())
       absRows = absRows.filter(r => nameSearchMatch(normalize(r.full_name || r.lastname || ''), normalize(debouncedName.trim())))
 
-    // Zone filter: only count absences for people who visit this zone (via IIN)
+    // Zone filter: only count absences for people who visit this zone (IIN or name)
     if (filters.zone) {
       absRows = absRows.filter(r => {
-        if (!r.login) return false
-        const zones = allIinZones.get(r.login)
-        return zones && zones.has(filters.zone)
+        const keys = [r.login, toFI(normalize(r.full_name || r.lastname || ''))].filter(Boolean)
+        return keys.some(k => {
+          const zones = personZones.get(k)
+          return zones && zones.has(filters.zone)
+        })
       })
     }
 
@@ -192,7 +197,7 @@ export default function App() {
       absentCount:  absentKeys.size,
       visitedPct:   expectedCount > 0 ? Math.round(visitedKeys.size / expectedCount * 100) : null,
     }
-  }, [nameFilteredRows, absData?.rows, dateFrom, dateTo, debouncedName, branchFilter, staffCount, filters.zone, filters.terminal, allIinZones])
+  }, [nameFilteredRows, absData?.rows, dateFrom, dateTo, debouncedName, branchFilter, staffCount, filters.zone, filters.terminal, personZones])
 
   const personHours = useMemo(() => {
     if (!debouncedName.trim() || !nameFilteredRows.length) return null
