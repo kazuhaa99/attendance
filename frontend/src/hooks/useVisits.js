@@ -26,7 +26,7 @@ export function useVisits(dateFrom, dateTo, filters, refreshKey) {
 
     return () => { cancelled = true }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateFrom, dateTo, filters.name, filters.zone, filters.terminal, filters.direction, filters.noName, refreshKey])
+  }, [dateFrom, dateTo, filters.noName, refreshKey])
 
   return { data, loading, error }
 }

@@ -26,12 +26,8 @@ export default function KPIRow({ data, rows, loading, staffKpi, absLoading, pers
   const zoneCount   = zoneSet.size
   const terminalCount = new Set(filtered.map(r => `${r.zone}::${r.terminal}`).filter(v => !v.includes('—'))).size
 
-  const total    = globalName ? filtered.length : (data?.total ?? null)
-  const totalSub = globalName
-    ? 'по фильтру'
-    : (data && data.loaded < data.total)
-      ? `показано ${fmt(data.loaded)} из ${fmt(data.total)}`
-      : 'за период'
+  const total    = filtered.length
+  const totalSub = 'за период'
 
   const staffLoading = loading || absLoading
   const isFiltered   = !!globalName?.trim()

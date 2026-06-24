@@ -97,8 +97,18 @@ export default function App() {
     return [...names].sort()
   }, [data?.rows, groupMap])
 
-  const nameFilteredRows = useMemo(() => {
+  // Client-side zone/terminal/direction filtering (API returns all data)
+  const baseFilteredRows = useMemo(() => {
     let rows = data?.rows ?? []
+    if (filters.zone)      rows = rows.filter(r => r.zone === filters.zone)
+    if (filters.terminal)  rows = rows.filter(r => r.terminal === filters.terminal)
+    if (filters.direction === 'in')  rows = rows.filter(r => r.is_out === false)
+    if (filters.direction === 'out') rows = rows.filter(r => r.is_out === true)
+    return rows
+  }, [data?.rows, filters.zone, filters.terminal, filters.direction])
+
+  const nameFilteredRows = useMemo(() => {
+    let rows = baseFilteredRows
     if (debouncedName.trim()) {
       const norm = normalize(debouncedName.trim())
       rows = rows.filter(r => nameSearchMatch(normalize(r.name || ''), norm))
@@ -107,7 +117,7 @@ export default function App() {
       rows = rows.filter(r => (groupMap[r.group] || '') === branchFilter)
     }
     return rows
-  }, [data?.rows, debouncedName, branchFilter, groupMap])
+  }, [baseFilteredRows, debouncedName, branchFilter, groupMap])
 
   // WorktimeStats and displayRows derived from nameFilteredRows
   const workStats = useMemo(() => computeWorkStats(nameFilteredRows), [nameFilteredRows])
@@ -120,20 +130,47 @@ export default function App() {
   const absenceMaps = useMemo(() => buildAbsenceMap(absData?.rows ?? []), [absData?.rows])
 
 
-  // StaffKpi — when name filter active, scope to that person
+  // IIN → zone mapping from ALL visit data (for zone-aware absence filtering)
+  const allIinZones = useMemo(() => {
+    const map = new Map()
+    for (const r of data?.rows ?? []) {
+      if (r.iin && r.zone) {
+        if (!map.has(r.iin)) map.set(r.iin, new Set())
+        map.get(r.iin).add(r.zone)
+      }
+    }
+    return map
+  }, [data?.rows])
+
   const staffKpi = useMemo(() => {
     const visitRows = nameFilteredRows
+    const toFI = s => s.split(' ').slice(0, 2).join(' ')
+
+    // Visited: unique people from filtered visits
+    const visitedKeys = new Set(visitRows.map(r => r.iin || (r.name ? toFI(normalize(r.name)) : '')).filter(Boolean))
+
+    // Absences filtered by date range
     const allAbsRows = (absData?.rows ?? []).filter(r => {
       const s = r.startdate?.slice(0, 10)
       const e = r.enddate?.slice(0, 10)
       if (!s || !e) return true
       return s <= dateTo && e >= dateFrom
     })
+
     let absRows = allAbsRows
     if (debouncedName.trim())
       absRows = absRows.filter(r => nameSearchMatch(normalize(r.full_name || r.lastname || ''), normalize(debouncedName.trim())))
+
+    // Zone filter: only count absences for people who visit this zone (via IIN)
+    if (filters.zone) {
+      absRows = absRows.filter(r => {
+        if (!r.login) return false
+        const zones = allIinZones.get(r.login)
+        return zones && zones.has(filters.zone)
+      })
+    }
+
     if (branchFilter) {
-      // Filter absences by IIN/name of people seen in the selected group
       const groupIins  = new Set(visitRows.map(r => r.iin).filter(Boolean))
       const groupNames = new Set(visitRows.map(r => normalize(r.name || '').split(' ').slice(0, 2).join(' ')).filter(Boolean))
       absRows = absRows.filter(r =>
@@ -142,10 +179,8 @@ export default function App() {
       )
     }
 
-    // Use IIN as primary key, fall back to normalized FI name
-    const toFI = s => s.split(' ').slice(0, 2).join(' ')
-    const visitedKeys = new Set(visitRows.map(r => r.iin || (r.name ? toFI(normalize(r.name)) : '')).filter(Boolean))
-    const absentKeys  = new Set(absRows.map(r => r.login || toFI(r._norm_full || normalize(r.full_name || ''))).filter(Boolean))
+    const absentKeys = new Set(absRows.map(r => r.login || toFI(r._norm_full || normalize(r.full_name || ''))).filter(Boolean))
+
     const hasFilter = !!(filters.zone || filters.terminal || debouncedName.trim() || branchFilter)
     const total = (!hasFilter && staffCount) ? staffCount : new Set([...visitedKeys, ...absentKeys]).size
     const expectedCount = Math.max(total - absentKeys.size, 0)
@@ -157,7 +192,7 @@ export default function App() {
       absentCount:  absentKeys.size,
       visitedPct:   expectedCount > 0 ? Math.round(visitedKeys.size / expectedCount * 100) : null,
     }
-  }, [nameFilteredRows, absData?.rows, dateFrom, dateTo, debouncedName, branchFilter, staffCount, filters.zone, filters.terminal])
+  }, [nameFilteredRows, absData?.rows, dateFrom, dateTo, debouncedName, branchFilter, staffCount, filters.zone, filters.terminal, allIinZones])
 
   const personHours = useMemo(() => {
     if (!debouncedName.trim() || !nameFilteredRows.length) return null
