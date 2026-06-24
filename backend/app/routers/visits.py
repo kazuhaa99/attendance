@@ -205,7 +205,7 @@ async def get_staff(client: httpx.AsyncClient = Depends(http_client)) -> dict:
     }
     all_cards = []
     offset = 0
-    page = 500
+    page = settings.page_size
     while True:
         resp = await client.get(
             f"{settings.elpass_base_url}/el_tcards?isDisabled=eq.false&deleted_at=is.null&select=name,no,meta_",

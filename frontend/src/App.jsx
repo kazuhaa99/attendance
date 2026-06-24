@@ -130,24 +130,8 @@ export default function App() {
   const absenceMaps = useMemo(() => buildAbsenceMap(absData?.rows ?? []), [absData?.rows])
 
 
-  // Person → zones mapping from ALL visit data (multiple keys per person for robust matching)
-  const personZones = useMemo(() => {
-    const toFI = s => normalize(s).split(' ').slice(0, 2).join(' ')
-    const map = new Map()
-    for (const r of data?.rows ?? []) {
-      if (!r.zone || r.zone === '—') continue
-      const name = r.name ? toFI(r.name) : ''
-      const reversedName = name ? name.split(' ').reverse().join(' ') : ''
-      const keys = [r.iin, r.no, name, reversedName].filter(Boolean)
-      for (const k of keys) {
-        if (!map.has(k)) map.set(k, new Set())
-        map.get(k).add(r.zone)
-      }
-    }
-    return map
-  }, [data?.rows])
 
-  // All ElPass cardholders (from /api/staff, ALL cards, not just today's visitors)
+  // All ElPass cardholders — keys for matching against Impala absences
   const allCardKeys = useMemo(() => {
     const toFI = s => normalize(s).split(' ').slice(0, 2).join(' ')
     const keys = new Set()
@@ -156,7 +140,6 @@ export default function App() {
       if (c.no) keys.add(c.no)
       const name = c.name ? toFI(c.name) : ''
       if (name) keys.add(name)
-      if (name) keys.add(name.split(' ').reverse().join(' '))
     }
     return keys
   }, [staff.cards])
@@ -167,6 +150,7 @@ export default function App() {
 
     const visitedKeys = new Set(visitRows.map(r => r.iin || (r.name ? toFI(normalize(r.name)) : '')).filter(Boolean))
 
+    // Absences filtered by date range
     const allAbsRows = (absData?.rows ?? []).filter(r => {
       const s = r.startdate?.slice(0, 10)
       const e = r.enddate?.slice(0, 10)
@@ -174,38 +158,17 @@ export default function App() {
       return s <= dateTo && e >= dateFrom
     })
 
-    // Only count absences for people who have an ElPass card (matched by IIN, card no, or name)
-    let absRows = allAbsRows.filter(r => {
-      const name = toFI(normalize(r.full_name || r.lastname || ''))
-      const reversed = name ? name.split(' ').reverse().join(' ') : ''
-      return [r.login, name, reversed].some(k => k && allCardKeys.has(k))
-    })
-
-    if (debouncedName.trim())
-      absRows = absRows.filter(r => nameSearchMatch(normalize(r.full_name || r.lastname || ''), normalize(debouncedName.trim())))
-
-    if (filters.zone) {
-      absRows = absRows.filter(r => {
-        const name = toFI(normalize(r.full_name || r.lastname || ''))
-        const reversed = name ? name.split(' ').reverse().join(' ') : ''
-        return [r.login, name, reversed].some(k => {
-          const zones = personZones.get(k)
-          return zones && zones.has(filters.zone)
+    // Only count absences for people who have an ElPass card
+    const matchedAbsRows = allCardKeys.size > 0
+      ? allAbsRows.filter(r => {
+          const fi = toFI(normalize(r.full_name || r.lastname || ''))
+          return (r.login && allCardKeys.has(r.login)) || (fi && allCardKeys.has(fi))
         })
-      })
-    }
+      : allAbsRows
 
-    if (branchFilter) {
-      const groupIins  = new Set(visitRows.map(r => r.iin).filter(Boolean))
-      const groupNames = new Set(visitRows.map(r => normalize(r.name || '').split(' ').slice(0, 2).join(' ')).filter(Boolean))
-      absRows = absRows.filter(r =>
-        (r.login && groupIins.has(r.login)) ||
-        groupNames.has(normalize(r.full_name || r.lastname || '').split(' ').slice(0, 2).join(' '))
-      )
-    }
+    const absentKeys = new Set(matchedAbsRows.map(r => r.login || toFI(normalize(r.full_name || ''))).filter(Boolean))
 
-    const absentKeys = new Set(absRows.map(r => r.login || toFI(normalize(r.full_name || ''))).filter(Boolean))
-    const total = staff.count || new Set([...visitedKeys, ...absentKeys]).size
+    const total = staff.count || 0
     const expectedCount = Math.max(total - absentKeys.size, 0)
 
     return {
@@ -215,7 +178,7 @@ export default function App() {
       absentCount:  absentKeys.size,
       visitedPct:   expectedCount > 0 ? Math.round(visitedKeys.size / expectedCount * 100) : null,
     }
-  }, [nameFilteredRows, absData?.rows, data?.rows, dateFrom, dateTo, debouncedName, branchFilter, staff.count, filters.zone, filters.terminal, personZones, allCardKeys])
+  }, [nameFilteredRows, absData?.rows, dateFrom, dateTo, staff.count, allCardKeys])
 
   const personHours = useMemo(() => {
     if (!debouncedName.trim() || !nameFilteredRows.length) return null
