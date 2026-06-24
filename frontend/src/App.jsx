@@ -160,13 +160,13 @@ export default function App() {
 
   const personHours = useMemo(() => {
     if (!debouncedName.trim() || !nameFilteredRows.length) return null
-    const { people } = computeHoursTable(nameFilteredRows, dateFrom, dateTo)
+    const { people } = computeHoursTable(nameFilteredRows, dateFrom, dateTo, absData)
     if (!people.length) return null
     const totalMin = people.reduce((s, p) => s + p.totalMin, 0)
     const firstIn  = people.flatMap(p => Object.values(p.days ?? {})).map(d => d?.firstIn).filter(Boolean).sort()[0] ?? null
     const lastOut  = people.flatMap(p => Object.values(p.days ?? {})).map(d => d?.lastOut).filter(Boolean).sort().at(-1) ?? null
     return { totalMin, firstIn, lastOut, people: people.length }
-  }, [nameFilteredRows, dateFrom, dateTo, debouncedName])
+  }, [nameFilteredRows, dateFrom, dateTo, debouncedName, absData])
 
   const anomalyNames = useMemo(() => {
     if (!absenceMaps.fullMap.size && !absenceMaps.lastnameMap.size) return new Set()
@@ -289,6 +289,7 @@ export default function App() {
           rows={nameFilteredRows}
           dateFrom={dateFrom}
           dateTo={dateTo}
+          absenceData={absData}
           globalName={globalName}
           onFilterByEmployee={name => {
             setGlobalName(name)

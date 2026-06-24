@@ -31,13 +31,13 @@ function weekMinutes(person, weekDates) {
   return total
 }
 
-export default function HoursPanel({ rows, dateFrom, dateTo, onFilterByEmployee, globalName = '' }) {
+export default function HoursPanel({ rows, dateFrom, dateTo, absenceData, onFilterByEmployee, globalName = '' }) {
   const [open, setOpen] = useState(false)
   const [page, setPage] = useState(1)
 
   const { people, dates } = useMemo(
-    () => computeHoursTable(rows, dateFrom, dateTo),
-    [rows, dateFrom, dateTo]
+    () => computeHoursTable(rows, dateFrom, dateTo, absenceData),
+    [rows, dateFrom, dateTo, absenceData]
   )
 
   const weeks = useMemo(() => groupDatesByWeek(dates), [dates])
