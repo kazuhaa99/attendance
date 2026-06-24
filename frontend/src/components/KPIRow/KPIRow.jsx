@@ -24,7 +24,7 @@ export default function KPIRow({ data, rows, loading, staffKpi, absLoading, pers
   const outCount    = filtered.filter(r => r.is_out === true).length
   const zoneSet     = new Set(filtered.map(r => r.zone).filter(v => v && v !== '—'))
   const zoneCount   = zoneSet.size
-  const terminalCount = new Set(filtered.map(r => r.terminal).filter(v => v && v !== '—')).size
+  const terminalCount = new Set(filtered.map(r => `${r.zone}::${r.terminal}`).filter(v => !v.includes('—'))).size
 
   const total    = globalName ? filtered.length : (data?.total ?? null)
   const totalSub = globalName

@@ -146,7 +146,8 @@ export default function App() {
     const toFI = s => s.split(' ').slice(0, 2).join(' ')
     const visitedKeys = new Set(visitRows.map(r => r.iin || (r.name ? toFI(normalize(r.name)) : '')).filter(Boolean))
     const absentKeys  = new Set(absRows.map(r => r.login || toFI(r._norm_full || normalize(r.full_name || ''))).filter(Boolean))
-    const total = staffCount ?? new Set([...visitedKeys, ...absentKeys]).size
+    const hasFilter = !!(filters.zone || filters.terminal || debouncedName.trim() || branchFilter)
+    const total = (!hasFilter && staffCount) ? staffCount : new Set([...visitedKeys, ...absentKeys]).size
     const expectedCount = Math.max(total - absentKeys.size, 0)
 
     return {
@@ -156,7 +157,7 @@ export default function App() {
       absentCount:  absentKeys.size,
       visitedPct:   expectedCount > 0 ? Math.round(visitedKeys.size / expectedCount * 100) : null,
     }
-  }, [nameFilteredRows, absData?.rows, dateFrom, dateTo, debouncedName, branchFilter, staffCount])
+  }, [nameFilteredRows, absData?.rows, dateFrom, dateTo, debouncedName, branchFilter, staffCount, filters.zone, filters.terminal])
 
   const personHours = useMemo(() => {
     if (!debouncedName.trim() || !nameFilteredRows.length) return null
