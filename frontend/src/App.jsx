@@ -147,17 +147,14 @@ export default function App() {
     const visitedKeys = new Set(visitRows.map(r => r.iin || (r.name ? toFI(normalize(r.name)) : '')).filter(Boolean))
     const absentKeys  = new Set(absRows.map(r => r.login || toFI(r._norm_full || normalize(r.full_name || ''))).filter(Boolean))
     const total = staffCount ?? new Set([...visitedKeys, ...absentKeys]).size
-    // Only count absences for people who have a card (match by IIN/name)
-    const allCardKeys = new Set([...visitedKeys, ...absentKeys])
-    const matchedAbsentCount = [...absentKeys].filter(k => allCardKeys.has(k)).length
-    const expectedCount = Math.max(total - matchedAbsentCount, visitedKeys.size)
+    const expectedCount = Math.max(total - absentKeys.size, 0)
 
     return {
       total,
       expectedCount,
       visitedCount: visitedKeys.size,
       absentCount:  absentKeys.size,
-      visitedPct:   expectedCount > 0 ? Math.min(Math.round(visitedKeys.size / expectedCount * 100), 100) : null,
+      visitedPct:   expectedCount > 0 ? Math.round(visitedKeys.size / expectedCount * 100) : null,
     }
   }, [nameFilteredRows, absData?.rows, dateFrom, dateTo, debouncedName, branchFilter, staffCount])
 
