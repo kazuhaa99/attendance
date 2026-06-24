@@ -13,7 +13,7 @@ import MusicPlayer from './components/MusicPlayer/MusicPlayer'
 import { useVisits } from './hooks/useVisits'
 import { useAbsences } from './hooks/useAbsences'
 import { useGroups } from './hooks/useGroups'
-import { useStaffCount } from './hooks/useStaffCount'
+import { useStaff } from './hooks/useStaffCount'
 import { useDebounce } from './hooks/useDebounce'
 import { computeWorkStats } from './utils/workStats'
 import { computeHoursTable } from './utils/hoursUtils'
@@ -78,7 +78,7 @@ export default function App() {
   const { data, loading, error }                                   = useVisits(dateFrom, dateTo, activeFilters, refreshKey)
   const { data: absData, loading: absLoading, error: absError }    = useAbsences(dateFrom, dateTo, refreshKey)
   const groupMap = useGroups()
-  const staffCount = useStaffCount()
+  const staff = useStaff()
 
   const { zones, terminals } = useMemo(() => {
     const rows = data?.rows ?? []
@@ -147,19 +147,19 @@ export default function App() {
     return map
   }, [data?.rows])
 
-  // All known ElPass person keys (from ALL visits, not zone-filtered)
-  const allKnownPersons = useMemo(() => {
+  // All ElPass cardholders (from /api/staff, ALL cards, not just today's visitors)
+  const allCardKeys = useMemo(() => {
     const toFI = s => normalize(s).split(' ').slice(0, 2).join(' ')
     const keys = new Set()
-    for (const r of data?.rows ?? []) {
-      if (r.iin) keys.add(r.iin)
-      if (r.no) keys.add(r.no)
-      const name = r.name ? toFI(r.name) : ''
+    for (const c of staff.cards) {
+      if (c.iin) keys.add(c.iin)
+      if (c.no) keys.add(c.no)
+      const name = c.name ? toFI(c.name) : ''
       if (name) keys.add(name)
       if (name) keys.add(name.split(' ').reverse().join(' '))
     }
     return keys
-  }, [data?.rows])
+  }, [staff.cards])
 
   const staffKpi = useMemo(() => {
     const visitRows = nameFilteredRows
@@ -174,11 +174,11 @@ export default function App() {
       return s <= dateTo && e >= dateFrom
     })
 
-    // Only count absences for people who exist in ElPass (matched by IIN or name)
+    // Only count absences for people who have an ElPass card (matched by IIN, card no, or name)
     let absRows = allAbsRows.filter(r => {
       const name = toFI(normalize(r.full_name || r.lastname || ''))
       const reversed = name ? name.split(' ').reverse().join(' ') : ''
-      return [r.login, name, reversed].some(k => k && allKnownPersons.has(k))
+      return [r.login, name, reversed].some(k => k && allCardKeys.has(k))
     })
 
     if (debouncedName.trim())
@@ -205,7 +205,7 @@ export default function App() {
     }
 
     const absentKeys = new Set(absRows.map(r => r.login || toFI(normalize(r.full_name || ''))).filter(Boolean))
-    const total = staffCount ?? new Set([...visitedKeys, ...absentKeys]).size
+    const total = staff.count || new Set([...visitedKeys, ...absentKeys]).size
     const expectedCount = Math.max(total - absentKeys.size, 0)
 
     return {
@@ -215,7 +215,7 @@ export default function App() {
       absentCount:  absentKeys.size,
       visitedPct:   expectedCount > 0 ? Math.round(visitedKeys.size / expectedCount * 100) : null,
     }
-  }, [nameFilteredRows, absData?.rows, data?.rows, dateFrom, dateTo, debouncedName, branchFilter, staffCount, filters.zone, filters.terminal, personZones, allKnownPersons])
+  }, [nameFilteredRows, absData?.rows, data?.rows, dateFrom, dateTo, debouncedName, branchFilter, staff.count, filters.zone, filters.terminal, personZones, allCardKeys])
 
   const personHours = useMemo(() => {
     if (!debouncedName.trim() || !nameFilteredRows.length) return null

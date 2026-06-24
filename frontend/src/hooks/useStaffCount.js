@@ -2,15 +2,15 @@ import { useState, useEffect } from 'react'
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '')
 
-export function useStaffCount() {
-  const [count, setCount] = useState(null)
+export function useStaff() {
+  const [data, setData] = useState({ count: 0, cards: [] })
 
   useEffect(() => {
-    fetch(`${base}/api/staff-count`)
+    fetch(`${base}/api/staff`)
       .then(r => r.json())
-      .then(d => setCount(d.count ?? 0))
+      .then(d => setData(d))
       .catch(() => {})
   }, [])
 
-  return count
+  return data
 }

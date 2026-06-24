@@ -193,29 +193,38 @@ async def get_groups(client: httpx.AsyncClient = Depends(http_client)) -> dict:
     return {g["code"]: g["name"] for g in resp.json() if g.get("code") and g.get("name")}
 
 
-@router.get("/staff-count")
-async def get_staff_count(client: httpx.AsyncClient = Depends(http_client)) -> dict:
+@router.get("/staff")
+async def get_staff(client: httpx.AsyncClient = Depends(http_client)) -> dict:
     try:
         token = await get_token(client)
     except Exception:
-        return {"count": 0}
-    resp = await client.get(
-        f"{settings.elpass_base_url}/el_tcards?isDisabled=eq.false&deleted_at=is.null&select=uuid",
-        headers={
-            "Authorization": f"Bearer {token}",
-            "Prefer": "count=exact",
-            "Range": "0-0",
-        },
-    )
-    if resp.status_code not in (200, 206):
-        return {"count": 0}
-    cr = resp.headers.get("content-range", "")
-    if "/" in cr:
-        try:
-            return {"count": int(cr.split("/")[-1])}
-        except ValueError:
-            pass
-    return {"count": 0}
+        return {"count": 0, "cards": []}
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Prefer": "count=exact",
+    }
+    all_cards = []
+    offset = 0
+    page = 500
+    while True:
+        resp = await client.get(
+            f"{settings.elpass_base_url}/el_tcards?isDisabled=eq.false&deleted_at=is.null&select=name,no,meta_",
+            headers={**headers, "Range": f"{offset}-{offset + page - 1}"},
+        )
+        if resp.status_code not in (200, 206):
+            break
+        batch = resp.json()
+        for c in batch:
+            meta = c.get("meta_") or {}
+            all_cards.append({
+                "name": c.get("name") or "",
+                "no": c.get("no") or "",
+                "iin": meta.get("iin") or "",
+            })
+        if len(batch) < page:
+            break
+        offset += page
+    return {"count": len(all_cards), "cards": all_cards}
 
 
 @router.get("/health")
