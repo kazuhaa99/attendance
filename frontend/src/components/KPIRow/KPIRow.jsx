@@ -38,7 +38,7 @@ export default function KPIRow({ data, rows, loading, staffKpi, absLoading, pers
       <KPI label="Уникальных карт" value={fmt(uniqueCards)}  sub={isFiltered ? 'карт у сотрудника' : 'посетителей'} />
       <KPI label="Входов"          value={fmt(inCount)}      sub="isOut = false" color="var(--green)" />
       <KPI label="Выходов"         value={fmt(outCount)}     sub="isOut = true"  color="var(--red)" />
-      <KPI label="Устройств"       value={fmt(terminalCount)} sub={`${zoneCount} ${zoneCount === 1 ? 'зона' : zoneCount < 5 ? 'зоны' : 'зон'}`} />
+      <KPI label="Устройств"       value={fmt(terminalCount)} sub={[...zoneSet].join(' + ')} />
 
       {isFiltered && personHours ? (
         <>

@@ -130,13 +130,15 @@ export default function App() {
   const absenceMaps = useMemo(() => buildAbsenceMap(absData?.rows ?? []), [absData?.rows])
 
 
-  // Person → zones mapping from ALL visit data (IIN or name → Set of zones)
+  // Person → zones mapping from ALL visit data (multiple keys per person for robust matching)
   const personZones = useMemo(() => {
     const toFI = s => normalize(s).split(' ').slice(0, 2).join(' ')
     const map = new Map()
     for (const r of data?.rows ?? []) {
       if (!r.zone || r.zone === '—') continue
-      const keys = [r.iin, r.name ? toFI(r.name) : ''].filter(Boolean)
+      const name = r.name ? toFI(r.name) : ''
+      const reversedName = name ? name.split(' ').reverse().join(' ') : ''
+      const keys = [r.iin, r.no, name, reversedName].filter(Boolean)
       for (const k of keys) {
         if (!map.has(k)) map.set(k, new Set())
         map.get(k).add(r.zone)
@@ -164,10 +166,12 @@ export default function App() {
     if (debouncedName.trim())
       absRows = absRows.filter(r => nameSearchMatch(normalize(r.full_name || r.lastname || ''), normalize(debouncedName.trim())))
 
-    // Zone filter: only count absences for people who visit this zone (IIN or name)
+    // Zone filter: only count absences for people who visit this zone (IIN, name, reversed name)
     if (filters.zone) {
       absRows = absRows.filter(r => {
-        const keys = [r.login, toFI(normalize(r.full_name || r.lastname || ''))].filter(Boolean)
+        const name = toFI(normalize(r.full_name || r.lastname || ''))
+        const reversed = name ? name.split(' ').reverse().join(' ') : ''
+        const keys = [r.login, name, reversed].filter(Boolean)
         return keys.some(k => {
           const zones = personZones.get(k)
           return zones && zones.has(filters.zone)
