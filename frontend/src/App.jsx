@@ -131,42 +131,20 @@ export default function App() {
 
 
 
-  // All ElPass cardholders — keys for matching against Impala absences
-  const allCardKeys = useMemo(() => {
-    const toFI = s => normalize(s).split(' ').slice(0, 2).join(' ')
-    const keys = new Set()
-    for (const c of staff.cards) {
-      if (c.iin) keys.add(c.iin)
-      if (c.no) keys.add(c.no)
-      const name = c.name ? toFI(c.name) : ''
-      if (name) keys.add(name)
-    }
-    return keys
-  }, [staff.cards])
-
   const staffKpi = useMemo(() => {
     const visitRows = nameFilteredRows
     const toFI = s => s.split(' ').slice(0, 2).join(' ')
 
     const visitedKeys = new Set(visitRows.map(r => r.iin || (r.name ? toFI(normalize(r.name)) : '')).filter(Boolean))
 
-    // Absences filtered by date range
-    const allAbsRows = (absData?.rows ?? []).filter(r => {
+    // All absences active today — no ElPass filtering
+    const todayAbs = (absData?.rows ?? []).filter(r => {
       const s = r.startdate?.slice(0, 10)
       const e = r.enddate?.slice(0, 10)
       if (!s || !e) return true
       return s <= dateTo && e >= dateFrom
     })
-
-    // Only count absences for people who have an ElPass card
-    const matchedAbsRows = allCardKeys.size > 0
-      ? allAbsRows.filter(r => {
-          const fi = toFI(normalize(r.full_name || r.lastname || ''))
-          return (r.login && allCardKeys.has(r.login)) || (fi && allCardKeys.has(fi))
-        })
-      : allAbsRows
-
-    const absentKeys = new Set(matchedAbsRows.map(r => r.login || toFI(normalize(r.full_name || ''))).filter(Boolean))
+    const absentKeys = new Set(todayAbs.map(r => r.login || toFI(normalize(r.full_name || ''))).filter(Boolean))
 
     const total = staff.count || 0
     const expectedCount = Math.max(total - absentKeys.size, 0)
@@ -178,7 +156,7 @@ export default function App() {
       absentCount:  absentKeys.size,
       visitedPct:   expectedCount > 0 ? Math.round(visitedKeys.size / expectedCount * 100) : null,
     }
-  }, [nameFilteredRows, absData?.rows, dateFrom, dateTo, staff.count, allCardKeys])
+  }, [nameFilteredRows, absData?.rows, dateFrom, dateTo, staff.count])
 
   const personHours = useMemo(() => {
     if (!debouncedName.trim() || !nameFilteredRows.length) return null
