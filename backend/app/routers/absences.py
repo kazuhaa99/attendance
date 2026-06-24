@@ -19,28 +19,18 @@ def _normalize(s: str) -> str:
 
 
 def _patch_ssl() -> None:
-    """Patch thrift SSL to work with OpenSSL 3.5+ which requires ca_certs
-    and disables legacy ciphers needed by Impala."""
+    """Lower OpenSSL security level to allow RSA key-exchange ciphers
+    required by Impala (AES256-GCM-SHA384)."""
     try:
-        import ssl
         import thrift.transport.TSSLSocket as _tssl
+        _orig = _tssl.TSSLBase._init_context
 
-        _orig_init = _tssl.TSSLBase.__init__
-        def _patched_init(self, server_side, host, ssl_opts):
-            ssl_opts = dict(ssl_opts) if ssl_opts else {}
-            ssl_opts.pop('cert_reqs', None)
-            ssl_opts.pop('ca_certs', None)
-            if 'ssl_context' not in ssl_opts:
-                ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-                ctx.check_hostname = False
-                ctx.verify_mode = ssl.CERT_NONE
-                try:
-                    ctx.set_ciphers('ALL:@SECLEVEL=0')
-                except Exception:
-                    pass
-                ssl_opts['ssl_context'] = ctx
-            _orig_init(self, server_side, host, ssl_opts)
-        _tssl.TSSLBase.__init__ = _patched_init
+        def _patched(self, ssl_version):
+            _orig(self, ssl_version)
+            if getattr(self, '_context', None):
+                self._context.set_ciphers('DEFAULT:@SECLEVEL=0')
+
+        _tssl.TSSLBase._init_context = _patched
     except Exception:
         pass
 
@@ -75,24 +65,12 @@ def _broad_range() -> tuple[str, str]:
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-def _make_ssl_ctx():
-    import ssl
-    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
-    try:
-        ctx.set_ciphers('ALL:@SECLEVEL=0')
-    except Exception:
-        pass
-    return ctx
-
-
 def _query_sync() -> list[dict]:
     from impala.dbapi import connect
 
     date_from, date_to = _broad_range()
 
-    kw = dict(
+    conn = connect(
         host=settings.impala_host,
         port=settings.impala_port,
         database=settings.impala_database,
@@ -102,10 +80,6 @@ def _query_sync() -> list[dict]:
         password=settings.impala_password,
         timeout=30,
     )
-    if settings.impala_ssl:
-        kw['ssl_context'] = _make_ssl_ctx()
-
-    conn = connect(**kw)
     try:
         cur = conn.cursor()
         cur.execute(
