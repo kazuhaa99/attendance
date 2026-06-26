@@ -1,5 +1,7 @@
 import { useState, useMemo } from 'react'
 import { computeHoursTable, groupDatesByWeek, fmtMin, hoursTier } from '../../utils/hoursUtils'
+import { useVisits } from '../../hooks/useVisits'
+import { useAbsences } from '../../hooks/useAbsences'
 import s from './HoursPanel.module.css'
 
 const PAGE_SIZE = 25
@@ -31,13 +33,42 @@ function weekMinutes(person, weekDates) {
   return total
 }
 
-export default function HoursPanel({ rows, dateFrom, dateTo, absenceData, onFilterByEmployee, globalName = '' }) {
+function lastMonday() {
+  const d = new Date()
+  const day = d.getDay()
+  d.setDate(d.getDate() - ((day + 6) % 7))
+  return d.toISOString().slice(0, 10)
+}
+
+function daysAgo(n) {
+  const d = new Date()
+  d.setDate(d.getDate() - n)
+  return d.toISOString().slice(0, 10)
+}
+
+const today = () => new Date().toISOString().slice(0, 10)
+
+const PRESETS = [
+  { label: '1 нед', from: () => lastMonday(), to: today },
+  { label: '2 нед', from: () => daysAgo(13), to: today },
+  { label: 'Месяц', from: () => daysAgo(29), to: today },
+]
+
+export default function HoursPanel({ onFilterByEmployee, globalName = '' }) {
   const [open, setOpen] = useState(false)
   const [page, setPage] = useState(1)
+  const [preset, setPreset] = useState(0)
+  const [hoursFrom, setHoursFrom] = useState(PRESETS[0].from)
+  const [hoursTo, setHoursTo] = useState(PRESETS[0].to)
+
+  const { data: hoursData, loading } = useVisits(hoursFrom, hoursTo, {}, 0)
+  const { data: absData } = useAbsences(hoursFrom, hoursTo, 0)
+
+  const hoursRows = hoursData?.rows ?? []
 
   const { people, dates } = useMemo(
-    () => computeHoursTable(rows, dateFrom, dateTo, absenceData),
-    [rows, dateFrom, dateTo, absenceData]
+    () => computeHoursTable(hoursRows, hoursFrom, hoursTo, absData),
+    [hoursRows, hoursFrom, hoursTo, absData]
   )
 
   const weeks = useMemo(() => groupDatesByWeek(dates), [dates])
@@ -61,7 +92,21 @@ export default function HoursPanel({ rows, dateFrom, dateTo, absenceData, onFilt
 
   const totalCols = dates.length + (hasMultipleWeeks ? weeks.length : 0) + 2
 
-  if (!rows.length) return null
+  function selectPreset(i) {
+    setPreset(i)
+    setHoursFrom(PRESETS[i].from())
+    setHoursTo(PRESETS[i].to())
+  }
+
+  function setCustomFrom(v) {
+    setPreset(-1)
+    setHoursFrom(v)
+  }
+
+  function setCustomTo(v) {
+    setPreset(-1)
+    setHoursTo(v)
+  }
 
   return (
     <div className={s.wrap}>
@@ -75,6 +120,7 @@ export default function HoursPanel({ rows, dateFrom, dateTo, absenceData, onFilt
               {fmtMin(grandTotal)} ч
             </span>
           )}
+          {loading && <span className={s.pill}>загрузка…</span>}
         </div>
         <ChevronIcon open={open} />
       </div>
@@ -82,10 +128,33 @@ export default function HoursPanel({ rows, dateFrom, dateTo, absenceData, onFilt
       <div className={`${s.bodyWrap} ${open ? s.bodyWrapOpen : ''}`}>
         <div className={s.bodyInner}>
         <div className={s.body}>
-          <div className={s.toolbar}>
-            {globalName.trim() && filtered.length !== people.length && (
-              <span className={s.pill}>{filtered.length} совпадений</span>
-            )}
+          <div className={s.toolbar} onClick={e => e.stopPropagation()}>
+            <div className={s.presets}>
+              {PRESETS.map((p, i) => (
+                <button
+                  key={i}
+                  className={`${s.presetBtn} ${preset === i ? s.presetActive : ''}`}
+                  onClick={() => selectPreset(i)}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+            <div className={s.dateInputs}>
+              <input
+                type="date"
+                className={s.dateInput}
+                value={hoursFrom}
+                onChange={e => setCustomFrom(e.target.value)}
+              />
+              <span className={s.dateSep}>—</span>
+              <input
+                type="date"
+                className={s.dateInput}
+                value={hoursTo}
+                onChange={e => setCustomTo(e.target.value)}
+              />
+            </div>
             <span className={s.legend}>
               <span className={`${s.dot} ${s.dotGood}`} /> ≥8ч
               <span className={`${s.dot} ${s.dotWarn}`} /> 6–8ч
@@ -134,7 +203,7 @@ export default function HoursPanel({ rows, dateFrom, dateTo, absenceData, onFilt
               </thead>
               <tbody>
                 {pageRows.length === 0 ? (
-                  <tr><td colSpan={totalCols} className={s.empty}>Нет данных</td></tr>
+                  <tr><td colSpan={totalCols} className={s.empty}>{loading ? 'Загрузка…' : 'Нет данных'}</td></tr>
                 ) : pageRows.map((p, i) => (
                   <tr key={p.no ?? i}>
                     <td

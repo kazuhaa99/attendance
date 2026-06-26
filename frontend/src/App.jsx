@@ -286,10 +286,6 @@ export default function App() {
 
       <div id="section-hours" className={sections.hours ? '' : s.sectionHidden}>
         <HoursPanel
-          rows={nameFilteredRows}
-          dateFrom={dateFrom}
-          dateTo={dateTo}
-          absenceData={absData}
           globalName={globalName}
           onFilterByEmployee={name => {
             setGlobalName(name)

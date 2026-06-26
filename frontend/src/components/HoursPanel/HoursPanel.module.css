@@ -92,6 +92,54 @@
   margin-bottom: 12px;
 }
 
+.presets {
+  display: flex;
+  gap: 4px;
+}
+
+.presetBtn {
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.12s;
+  font-family: inherit;
+}
+
+.presetBtn:hover { color: var(--text); border-color: var(--muted); }
+
+.presetActive {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.dateInputs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dateInput {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 11px;
+  padding: 3px 6px;
+  font-family: inherit;
+  color-scheme: dark;
+}
+
+.dateSep {
+  color: var(--muted);
+  font-size: 11px;
+}
+
 .legend {
   display: flex;
   align-items: center;
