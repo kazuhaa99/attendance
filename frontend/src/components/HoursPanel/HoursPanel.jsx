@@ -1,7 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { computeHoursTable, groupDatesByWeek, fmtMin, hoursTier } from '../../utils/hoursUtils'
-import { useVisits } from '../../hooks/useVisits'
-import { useAbsences } from '../../hooks/useAbsences'
+import { fetchVisits } from '../../api/visits'
 import s from './HoursPanel.module.css'
 
 const PAGE_SIZE = 25
@@ -54,21 +53,29 @@ const PRESETS = [
   { label: 'Месяц', from: () => daysAgo(29), to: today },
 ]
 
-export default function HoursPanel({ onFilterByEmployee, globalName = '' }) {
+export default function HoursPanel({ absenceData, onFilterByEmployee, globalName = '' }) {
   const [open, setOpen] = useState(false)
   const [page, setPage] = useState(1)
   const [preset, setPreset] = useState(0)
   const [hoursFrom, setHoursFrom] = useState(PRESETS[0].from)
   const [hoursTo, setHoursTo] = useState(PRESETS[0].to)
+  const [hoursRows, setHoursRows] = useState([])
+  const [loading, setLoading] = useState(false)
 
-  const { data: hoursData, loading } = useVisits(hoursFrom, hoursTo, {}, 0)
-  const { data: absData } = useAbsences(hoursFrom, hoursTo, 0)
-
-  const hoursRows = hoursData?.rows ?? []
+  useEffect(() => {
+    if (!hoursFrom || !hoursTo) return
+    let cancelled = false
+    setLoading(true)
+    fetchVisits(hoursFrom, hoursTo, {})
+      .then(d => { if (!cancelled) setHoursRows(d.rows ?? []) })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [hoursFrom, hoursTo])
 
   const { people, dates } = useMemo(
-    () => computeHoursTable(hoursRows, hoursFrom, hoursTo, absData),
-    [hoursRows, hoursFrom, hoursTo, absData]
+    () => computeHoursTable(hoursRows, hoursFrom, hoursTo, absenceData),
+    [hoursRows, hoursFrom, hoursTo, absenceData]
   )
 
   const weeks = useMemo(() => groupDatesByWeek(dates), [dates])

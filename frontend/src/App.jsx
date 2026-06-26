@@ -286,6 +286,7 @@ export default function App() {
 
       <div id="section-hours" className={sections.hours ? '' : s.sectionHidden}>
         <HoursPanel
+          absenceData={absData}
           globalName={globalName}
           onFilterByEmployee={name => {
             setGlobalName(name)
