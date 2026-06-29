@@ -22,17 +22,21 @@ export function computeWorkStats(rows) {
   }
 
   const todayStr = today()
-  const completedExits = Object.values(lastExit).filter(r => r.loged_at.slice(0, 10) !== todayStr)
+  const d = new Date()
+  d.setDate(d.getDate() - 1)
+  const yesterdayStr = d.toISOString().slice(0, 10)
+
+  const yesterdayExits = Object.values(lastExit).filter(r => r.loged_at.slice(0, 10) === yesterdayStr)
 
   const earlyIn  = Object.values(firstEntry).filter(r => t(r) <  CUT_IN)
   const lateIn   = Object.values(firstEntry).filter(r => t(r) >= CUT_IN)
-  const earlyOut = completedExits.filter(r => t(r) <  CUT_OUT)
-  const lateOut  = completedExits.filter(r => t(r) >= CUT_OUT)
+  const earlyOut = yesterdayExits.filter(r => t(r) <  CUT_OUT)
+  const lateOut  = yesterdayExits.filter(r => t(r) >= CUT_OUT)
 
   return {
     early_in:  { label: 'Пришли до 08:30',   sub: 'первый вход',      color: 'green',  icon: '↑', rows: earlyIn  },
     late_in:   { label: 'Пришли после 08:30', sub: 'первый вход',      color: 'orange', icon: '↑', rows: lateIn   },
-    early_out: { label: 'Ушли до 17:30',      sub: 'без сегодня',      color: 'orange', icon: '↓', rows: earlyOut },
-    late_out:  { label: 'Ушли после 17:30',   sub: 'без сегодня',      color: 'green',  icon: '↓', rows: lateOut  },
+    early_out: { label: 'Ушли до 17:30',      sub: 'за вчера',         color: 'orange', icon: '↓', rows: earlyOut },
+    late_out:  { label: 'Ушли после 17:30',   sub: 'за вчера',         color: 'green',  icon: '↓', rows: lateOut  },
   }
 }
