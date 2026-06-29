@@ -122,7 +122,7 @@ export function fmtMin(mins) {
   return `${h}:${String(m).padStart(2, '0')}`
 }
 
-// Color tier for daily: green ≥ 8h, yellow 6-8h, red < 6h
+// Color tier for daily: green ≥ 8h, orange 6-8h, red < 6h
 export function hoursTier(mins) {
   if (mins == null) return null
   if (mins >= 480) return 'good'
