@@ -36,8 +36,8 @@ export default function KPIRow({ data, rows, loading, staffKpi, absLoading, pers
     <div className={`${s.row} ${loading ? s.loading : ''} ${isFiltered ? s.filtered : ''}`}>
       <KPI label="Всего визитов"   value={fmt(total)}        sub={totalSub} />
       <KPI label="Уникальных карт" value={fmt(uniqueCards)}  sub={isFiltered ? 'карт у сотрудника' : 'посетителей'} />
-      <KPI label="Входов"          value={fmt(inCount)}      sub="isOut = false" color="var(--green)" />
-      <KPI label="Выходов"         value={fmt(outCount)}     sub="isOut = true"  color="var(--red)" />
+      <KPI label="Входов"          value={fmt(inCount)}      sub="за период" color="var(--green)" />
+      <KPI label="Выходов"         value={fmt(outCount)}     sub="за период"  color="var(--red)" />
       <KPI label="Устройств"       value={fmt(terminalCount)} sub={[...zoneSet].join(' + ')} />
 
       {isFiltered && personHours ? (
