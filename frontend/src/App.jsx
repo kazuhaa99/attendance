@@ -227,17 +227,17 @@ export default function App() {
           {SECTION_META.map(({ key, label, icon }) => {
             const isOn = sections[key]
             return (
-              <div key={key} className={`${s.secGroup} ${isOn ? '' : s.secGroupOff}`}>
+              <div key={key} className={`${s.secGroup} ${isOn ? s.secGroupOn : s.secGroupOff}`}>
                 <button
                   className={`${s.secBtn} ${isOn ? s.secBtnOn : s.secBtnOff}`}
                   onClick={() => handleSectionClick(key)}
-                  title={`Перейти к "${label}"`}
+                  title={isOn ? `Перейти к "${label}"` : `Показать "${label}"`}
                 >
                   <span className={s.secIcon}>{icon}</span>
                   {label}
                 </button>
                 <button
-                  className={`${s.secToggle} ${isOn ? s.secToggleOn : ''}`}
+                  className={`${s.secToggle} ${isOn ? s.secToggleOn : s.secToggleOff}`}
                   onClick={() => handleSectionToggle(key)}
                   title={isOn ? `Скрыть "${label}"` : `Показать "${label}"`}
                 >
