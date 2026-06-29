@@ -62,7 +62,7 @@ export default function KPIRow({ data, rows, loading, staffKpi, absLoading, pers
           />
         </>
       ) : (
-        <>
+        {/* Скрыто, логика сохранена в App.jsx (staffKpi)
           <KPI
             label="Должны прийти"
             value={staffLoading ? '…' : fmt(staffKpi?.expectedCount)}
@@ -83,7 +83,7 @@ export default function KPIRow({ data, rows, loading, staffKpi, absLoading, pers
             color="var(--red)"
             loading={staffLoading}
           />
-        </>
+        */}
       )}
     </div>
   )
