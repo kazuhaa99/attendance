@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { computeHoursTable, groupDatesByWeek, fmtMin, hoursTier } from '../../utils/hoursUtils'
+import { computeHoursTable, groupDatesByWeek, fmtMin, hoursTier, weekHoursTier } from '../../utils/hoursUtils'
 import { fetchVisits } from '../../api/visits'
 import s from './HoursPanel.module.css'
 
@@ -47,10 +47,10 @@ function daysAgo(n) {
 
 const today = () => new Date().toISOString().slice(0, 10)
 
-const ALL_FROM = '2025-01-01'
+const DEFAULT_FROM = '2026-05-01'
 
 const PRESETS = [
-  { label: 'Всё', from: () => ALL_FROM, to: today },
+  { label: 'Всё', from: () => DEFAULT_FROM, to: today },
   { label: '1 нед', from: () => lastMonday(), to: today },
   { label: '2 нед', from: () => daysAgo(13), to: today },
   { label: 'Месяц', from: () => daysAgo(29), to: today },
@@ -60,7 +60,7 @@ export default function HoursPanel({ absenceData, onFilterByEmployee, globalName
   const [open, setOpen] = useState(false)
   const [page, setPage] = useState(1)
   const [preset, setPreset] = useState(0)
-  const [hoursFrom, setHoursFrom] = useState(() => ALL_FROM)
+  const [hoursFrom, setHoursFrom] = useState(() => DEFAULT_FROM)
   const [hoursTo, setHoursTo] = useState(today)
   const [hoursRows, setHoursRows] = useState([])
   const [loading, setLoading] = useState(false)
@@ -235,7 +235,7 @@ export default function HoursPanel({ absenceData, onFilterByEmployee, globalName
                         hasMultipleWeeks
                           ? [(() => {
                               const wm = weekMinutes(p, w.dates)
-                              const wTier = hoursTier(Math.round(wm / w.dates.length))
+                              const wTier = weekHoursTier(wm)
                               return (
                                 <td key={`wt-${w.weekKey}`} className={`${s.cell} ${s.weekTotalCell} ${wTier ? s[wTier] : ''}`}>
                                   {wm > 0 ? fmtMin(wm) : <span className={s.dash}>—</span>}
