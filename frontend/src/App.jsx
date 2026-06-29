@@ -169,10 +169,15 @@ export default function App() {
   }, [nameFilteredRows, dateFrom, dateTo, debouncedName, absData])
 
   const anomalyNames = useMemo(() => {
-    if (!absenceMaps.fullMap.size && !absenceMaps.lastnameMap.size) return new Set()
+    if (!absenceMaps.fullMap.size && !absenceMaps.lastnameMap.size && !absenceMaps.iinMap.size) return new Set()
     const names = new Set()
     for (const r of data?.rows ?? []) {
-      if (getAbsenceForVisit(absenceMaps, r.name, r.loged_at, r.iin)) names.add(normalize(r.name || ''))
+      if (getAbsenceForVisit(absenceMaps, r.name, r.loged_at, r.iin)) {
+        const norm = normalize(r.name || '')
+        const fi = norm.split(' ').slice(0, 2).join(' ')
+        names.add(norm)
+        if (fi) names.add(fi)
+      }
     }
     return names
   }, [absenceMaps, data?.rows])
