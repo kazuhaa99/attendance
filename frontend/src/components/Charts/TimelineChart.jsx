@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react'
-import { Bar } from 'react-chartjs-2'
+import { Bar, Line } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
   CategoryScale, LinearScale, BarElement,
+  PointElement, LineElement, Filler,
   Tooltip, Legend,
 } from 'chart.js'
 import s from './Charts.module.css'
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend)
+ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, Filler, Tooltip, Legend)
 
 function cssVar(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
@@ -29,6 +30,29 @@ function diffDays(a, b) {
 }
 function isoDate(d) { return d.toISOString().slice(0, 10) }
 function pad2(n) { return String(n).padStart(2, '0') }
+
+function barWidth(numPoints) {
+  if (numPoints <= 7)  return { barPercentage: 0.5, maxBarThickness: 32, categoryPercentage: 0.7 }
+  if (numPoints <= 20) return { barPercentage: 0.7, maxBarThickness: 24, categoryPercentage: 0.8 }
+  return { barPercentage: 0.85, maxBarThickness: 16, categoryPercentage: 0.9 }
+}
+
+function aggregateByWeek(keys, dayMap) {
+  const weeks = []
+  let weekStart = null, weekSum = 0
+  for (const k of keys) {
+    const d = new Date(k + 'T12:00:00')
+    const dow = d.getDay()
+    if (dow === 1 || !weekStart) {
+      if (weekStart) weeks.push({ label: weekStart, count: weekSum })
+      weekStart = new Date(d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
+      weekSum = 0
+    }
+    weekSum += dayMap[k] || 0
+  }
+  if (weekStart) weeks.push({ label: weekStart, count: weekSum })
+  return weeks
+}
 
 export default function TimelineChart({ rows, dateFrom, dateTo, onDateFilter, globalName }) {
   const days   = diffDays(dateFrom, dateTo)
@@ -85,17 +109,83 @@ export default function TimelineChart({ rows, dateFrom, dateTo, onDateFilter, gl
       const day = r.loged_at?.slice(0, 10)
       if (day && day in dayMap) dayMap[day]++
     }
+
+    const numDays = keys.length
+
+    // > 150 days → area chart
+    if (numDays > 150) {
+      const agg = aggregateByWeek(keys, dayMap)
+      return {
+        mode:    'area',
+        labels:  agg.map(w => w.label),
+        counts:  agg.map(w => w.count),
+        isoKeys: null,
+        title:   'Посещения по неделям',
+        sub:     `${rows.length.toLocaleString('ru-RU')} записей · ${numDays} дн.`,
+      }
+    }
+
+    // > 80 days → aggregate by week, bar chart
+    if (numDays > 80) {
+      const agg = aggregateByWeek(keys, dayMap)
+      return {
+        mode:    'week',
+        labels:  agg.map(w => w.label),
+        counts:  agg.map(w => w.count),
+        isoKeys: null,
+        title:   'Посещения по неделям',
+        sub:     `${rows.length.toLocaleString('ru-RU')} записей · ${numDays} дн.`,
+      }
+    }
+
     return {
       mode:    'day',
       labels:  keys.map(d => new Date(d + 'T12:00:00').toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })),
       counts:  keys.map(k => dayMap[k]),
       isoKeys: keys,
       title:   'Посещения по дням',
-      sub:     `${rows.length.toLocaleString('ru-RU')} записей · ${days + 1} дн.`,
+      sub:     `${rows.length.toLocaleString('ru-RU')} записей · ${numDays} дн.`,
     }
   }, [rows, dateFrom, dateTo, byHour, days, activeHour, globalName])
 
   const { mode, labels, counts, isoKeys, title, sub } = chart
+
+  // ── Area chart for 150+ days ───────────────────────────────
+  if (mode === 'area') {
+    const areaData = {
+      labels,
+      datasets: [{
+        data: counts,
+        fill: true,
+        backgroundColor: 'rgba(99,102,241,0.15)',
+        borderColor: '#6366f1',
+        borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        tension: 0.3,
+      }],
+    }
+    const areaOpts = {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: tooltip() },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#71717a', font: { size: 11 }, maxRotation: 45 }, border: { color: 'transparent' } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#71717a', font: { size: 11 }, precision: 0 }, border: { color: 'transparent' }, beginAtZero: true },
+      },
+    }
+    return (
+      <div className={s.panel}>
+        <div className={s.panelHeader}>
+          <div className={s.panelTitle}>{title}</div>
+          <div className={s.panelSub}>{sub}</div>
+        </div>
+        <div className={s.panelBody}><div className={s.chartWrap}><Line data={areaData} options={areaOpts} /></div></div>
+      </div>
+    )
+  }
+
+  // ── Bar charts (day, week, hour, minute) ────────────────────
+  const bw = barWidth(labels.length)
 
   const bgColors = counts.map((_, i) => {
     if (mode === 'day')    return isoKeys[i] === activeSingleDay ? '#6366f1' : 'rgba(99,102,241,0.55)'
@@ -116,6 +206,9 @@ export default function TimelineChart({ rows, dateFrom, dateTo, onDateFilter, gl
       borderWidth:     1,
       borderRadius:    mode === 'minute' ? 2 : 3,
       borderSkipped:   false,
+      barPercentage:   bw.barPercentage,
+      maxBarThickness: bw.maxBarThickness,
+      categoryPercentage: bw.categoryPercentage,
     }],
   }
 
