@@ -84,15 +84,6 @@ export default function AbsencePanel({ data, loading, error, anomalyNames, onFil
           {(globalName.trim() || branchFilter) && baseFiltered.length !== rows.length && (
             <span className={s.filterPill}>{baseFiltered.length} совпадений</span>
           )}
-          {anomalyCount > 0 && (
-            <span
-              className={`${s.anomalyPill} ${anomalyFilter ? s.anomalyPillActive : ''}`}
-              title={anomalyFilter ? 'Сбросить фильтр аномалий' : 'Показать только аномалии (пришли, но числятся в отпуске)'}
-              onClick={e => { e.stopPropagation(); setAnomalyFilter(f => !f); if (!open) setOpen(true) }}
-            >
-              ⚠ {anomalyCount} аномалий
-            </span>
-          )}
         </div>
         <ChevronIcon open={open} />
       </div>
