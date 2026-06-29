@@ -61,30 +61,9 @@ export default function KPIRow({ data, rows, loading, staffKpi, absLoading, pers
             color="var(--red)"
           />
         </>
-      ) : (
-        {/* Скрыто, логика сохранена в App.jsx (staffKpi)
-          <KPI
-            label="Должны прийти"
-            value={staffLoading ? '…' : fmt(staffKpi?.expectedCount)}
-            sub={staffLoading ? '' : `всего пропусков: ${fmt(staffKpi?.total)}`}
-            loading={staffLoading}
-          />
-          <KPI
-            label="Пришло"
-            value={staffLoading ? '…' : fmt(staffKpi?.visitedCount)}
-            sub={staffLoading ? '' : `${pct(staffKpi?.visitedPct)} от ожидаемых`}
-            color="var(--green)"
-            loading={staffLoading}
-          />
-          <KPI
-            label="Отсутствуют"
-            value={staffLoading ? '…' : fmt(staffKpi?.absentCount)}
-            sub="отпуск / больничный"
-            color="var(--red)"
-            loading={staffLoading}
-          />
-        */}
-      )}
+      ) : null
+      // Скрыто: Должны прийти / Пришло / Отсутствуют — логика сохранена в App.jsx (staffKpi)
+      }
     </div>
   )
 }
