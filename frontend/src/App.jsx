@@ -429,24 +429,24 @@ const EyeOffIcon = () => (
 )
 
 const IconChart = () => (
-  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
-    <path d="M2 14V8M6 14V4M10 14V6M14 14V2" />
+  <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 17V10M7.5 17V5M12 17V8M16.5 17V3" />
   </svg>
 )
 const IconHours = () => (
-  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="8" cy="8" r="6.5" />
-    <path d="M8 4v4l2.5 2.5" />
+  <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="10" cy="10" r="8" />
+    <path d="M10 5v5l3 3" />
   </svg>
 )
 const IconAbsence = () => (
-  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="1.5" y="3" width="13" height="10" rx="1.5" />
-    <path d="M5 1.5v3M11 1.5v3M1.5 7h13" />
+  <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="14" height="14" rx="2" />
+    <path d="M3 8h14M7 2v4M13 2v4" />
   </svg>
 )
 const IconActivity = () => (
-  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="1 8 4 5 7 9 10 3 15 8" />
+  <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="2 10 6 6 10 12 14 4 18 10" />
   </svg>
 )
