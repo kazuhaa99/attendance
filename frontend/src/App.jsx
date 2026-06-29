@@ -37,7 +37,6 @@ export default function App() {
   const [globalName,    setGlobalName]    = useState('')
   const [branchFilter,  setBranchFilter]  = useState('')
 
-  const [sectionMode, setSectionMode] = useState(() => localStorage.getItem('sectionMode') || 'navigate')
   const [sections, setSections] = useState({ charts: true, hours: true, absences: true, visits: true })
 
   const scrollTo = useCallback((id) => {
@@ -50,17 +49,17 @@ export default function App() {
   }, [])
 
   const handleSectionClick = useCallback((key) => {
-    if (sectionMode === 'navigate') {
+    const isVisible = sections[key]
+    if (isVisible) {
       scrollTo(`section-${key}`)
     } else {
-      setSections(prev => ({ ...prev, [key]: !prev[key] }))
+      setSections(prev => ({ ...prev, [key]: true }))
+      setTimeout(() => scrollTo(`section-${key}`), 50)
     }
-  }, [sectionMode, scrollTo])
+  }, [sections, scrollTo])
 
-  const saveSectionMode = useCallback((mode) => {
-    setSectionMode(mode)
-    localStorage.setItem('sectionMode', mode)
-    if (mode === 'navigate') setSections({ charts: true, hours: true, absences: true, visits: true })
+  const handleSectionToggle = useCallback((key) => {
+    setSections(prev => ({ ...prev, [key]: !prev[key] }))
   }, [])
 
   const debouncedName = useDebounce(globalName, 350)
@@ -193,8 +192,8 @@ export default function App() {
   const SECTION_META = [
     { key: 'charts',   label: 'Графики',          icon: <IconChart /> },
     { key: 'hours',    label: 'Часы работы',       icon: <IconHours /> },
-    { key: 'absences', label: 'Отсутствия',        icon: <IconList /> },
-    { key: 'visits',   label: 'Лента активности',  icon: <IconClock /> },
+    { key: 'absences', label: 'Отсутствия',        icon: <IconAbsence /> },
+    { key: 'visits',   label: 'Лента активности',  icon: <IconActivity /> },
   ]
 
   return (
@@ -208,9 +207,7 @@ export default function App() {
           onDateFromChange={setDateFrom}
           onDateToChange={setDateTo}
           onRefresh={() => setRefreshKey(k => k + 1)}
-          settingsSlot={
-            <SettingsMenu mode={sectionMode} onModeChange={saveSectionMode} />
-          }
+          settingsSlot={null}
         />
 
         <FilterBar
@@ -229,14 +226,24 @@ export default function App() {
         <div className={s.sectionBar}>
           {SECTION_META.map(({ key, label, icon }) => {
             const isOn = sections[key]
-            const cls = sectionMode === 'toggle'
-              ? `${s.secBtn} ${isOn ? s.secBtnOn : s.secBtnOff}`
-              : `${s.secBtn} ${s.secBtnOn}`
             return (
-              <button key={key} className={cls} onClick={() => handleSectionClick(key)} title={label}>
-                <span className={s.secIcon}>{icon}</span>
-                {label}
-              </button>
+              <div key={key} className={`${s.secGroup} ${isOn ? '' : s.secGroupOff}`}>
+                <button
+                  className={`${s.secBtn} ${isOn ? s.secBtnOn : s.secBtnOff}`}
+                  onClick={() => handleSectionClick(key)}
+                  title={`Перейти к "${label}"`}
+                >
+                  <span className={s.secIcon}>{icon}</span>
+                  {label}
+                </button>
+                <button
+                  className={`${s.secToggle} ${isOn ? s.secToggleOn : ''}`}
+                  onClick={() => handleSectionToggle(key)}
+                  title={isOn ? `Скрыть "${label}"` : `Показать "${label}"`}
+                >
+                  {isOn ? <EyeIcon /> : <EyeOffIcon />}
+                </button>
+              </div>
             )
           })}
         </div>
@@ -409,25 +416,37 @@ const CheckMark = () => (
   </svg>
 )
 
+const EyeIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M1 8s3-5.5 7-5.5S15 8 15 8s-3 5.5-7 5.5S1 8 1 8z" />
+    <circle cx="8" cy="8" r="2" />
+  </svg>
+)
+const EyeOffIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6.6 6.6a2 2 0 0 0 2.8 2.8M1 1l14 14M4.3 4.3C2.6 5.5 1 8 1 8s3 5.5 7 5.5c1.4 0 2.7-.5 3.7-1.3M13 10.7C14.3 9.5 15 8 15 8s-3-5.5-7-5.5c-.7 0-1.4.1-2 .3" />
+  </svg>
+)
+
 const IconChart = () => (
   <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
     <path d="M2 14V8M6 14V4M10 14V6M14 14V2" />
   </svg>
 )
-const IconClock = () => (
-  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+const IconHours = () => (
+  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="8" cy="8" r="6.5" />
     <path d="M8 4v4l2.5 2.5" />
   </svg>
 )
-const IconHours = () => (
+const IconAbsence = () => (
   <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <rect x="1.5" y="3" width="13" height="10" rx="1.5" />
     <path d="M5 1.5v3M11 1.5v3M1.5 7h13" />
   </svg>
 )
-const IconList = () => (
-  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-    <path d="M5 3h9M5 8h9M5 13h7M2 3h.01M2 8h.01M2 13h.01" />
+const IconActivity = () => (
+  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="1 8 4 5 7 9 10 3 15 8" />
   </svg>
 )
