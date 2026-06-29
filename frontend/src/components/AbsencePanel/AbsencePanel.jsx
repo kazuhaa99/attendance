@@ -56,6 +56,7 @@ export default function AbsencePanel({ data, loading, error, anomalyNames, onFil
     if (typeFilter !== 'all') list = list.filter(r => absenceColorKey(r.type_absence_name) === typeFilter)
     if (anomalyFilter && anomalyNames?.size) {
       list = list.filter(r => {
+        if (r.login && anomalyNames.has(r.login)) return true
         const fullNorm = normalize(r.full_name || r.lastname || '')
         const fi = fullNorm.split(' ').slice(0, 2).join(' ')
         return anomalyNames.has(fi) || anomalyNames.has(fullNorm)

@@ -168,18 +168,19 @@ export default function App() {
     return { totalMin, firstIn, lastOut, people: people.length }
   }, [nameFilteredRows, dateFrom, dateTo, debouncedName, absData])
 
-  const anomalyNames = useMemo(() => {
+  const anomalyKeys = useMemo(() => {
     if (!absenceMaps.fullMap.size && !absenceMaps.lastnameMap.size && !absenceMaps.iinMap.size) return new Set()
-    const names = new Set()
+    const keys = new Set()
     for (const r of data?.rows ?? []) {
       if (getAbsenceForVisit(absenceMaps, r.name, r.loged_at, r.iin)) {
         const norm = normalize(r.name || '')
         const fi = norm.split(' ').slice(0, 2).join(' ')
-        names.add(norm)
-        if (fi) names.add(fi)
+        keys.add(norm)
+        if (fi) keys.add(fi)
+        if (r.iin) keys.add(r.iin)
       }
     }
-    return names
+    return keys
   }, [absenceMaps, data?.rows])
 
   function handleResetAll() {
@@ -308,7 +309,7 @@ export default function App() {
           data={absData}
           loading={absLoading}
           error={absError}
-          anomalyNames={anomalyNames}
+          anomalyNames={anomalyKeys}
           dateFrom={dateFrom}
           dateTo={dateTo}
           globalName={globalName}
