@@ -48,6 +48,7 @@ function daysAgo(n) {
 const today = () => new Date().toISOString().slice(0, 10)
 
 const PRESETS = [
+  { label: 'Всё', from: () => '2025-01-01', to: today },
   { label: '1 нед', from: () => lastMonday(), to: today },
   { label: '2 нед', from: () => daysAgo(13), to: today },
   { label: 'Месяц', from: () => daysAgo(29), to: today },
