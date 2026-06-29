@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { computeHoursTable, groupDatesByWeek, fmtMin, hoursTier } from '../../utils/hoursUtils'
 import { fetchVisits } from '../../api/visits'
 import s from './HoursPanel.module.css'
@@ -47,7 +47,10 @@ function daysAgo(n) {
 
 const today = () => new Date().toISOString().slice(0, 10)
 
+const ALL_FROM = '2025-01-01'
+
 const PRESETS = [
+  { label: 'Всё', from: () => ALL_FROM, to: today },
   { label: '1 нед', from: () => lastMonday(), to: today },
   { label: '2 нед', from: () => daysAgo(13), to: today },
   { label: 'Месяц', from: () => daysAgo(29), to: today },
@@ -57,12 +60,10 @@ export default function HoursPanel({ absenceData, onFilterByEmployee, globalName
   const [open, setOpen] = useState(false)
   const [page, setPage] = useState(1)
   const [preset, setPreset] = useState(0)
-  const [hoursFrom, setHoursFrom] = useState(PRESETS[0].from)
-  const [hoursTo, setHoursTo] = useState(PRESETS[0].to)
+  const [hoursFrom, setHoursFrom] = useState(() => ALL_FROM)
+  const [hoursTo, setHoursTo] = useState(today)
   const [hoursRows, setHoursRows] = useState([])
   const [loading, setLoading] = useState(false)
-  const scrollRef = useRef(null)
-  const didScrollRef = useRef(false)
 
   useEffect(() => {
     if (!hoursFrom || !hoursTo) return
@@ -74,16 +75,6 @@ export default function HoursPanel({ absenceData, onFilterByEmployee, globalName
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [hoursFrom, hoursTo])
-
-  useEffect(() => {
-    if (!loading && hoursRows.length > 0 && !didScrollRef.current && scrollRef.current) {
-      didScrollRef.current = true
-      requestAnimationFrame(() => {
-        const el = scrollRef.current
-        if (el) el.scrollLeft = el.scrollWidth
-      })
-    }
-  }, [loading, hoursRows])
 
   const { people, dates } = useMemo(
     () => computeHoursTable(hoursRows, hoursFrom, hoursTo, absenceData),
@@ -181,7 +172,7 @@ export default function HoursPanel({ absenceData, onFilterByEmployee, globalName
             </span>
           </div>
 
-          <div className={s.scroll} ref={scrollRef}>
+          <div className={s.scroll}>
             <table>
               <thead>
                 {hasMultipleWeeks && (
